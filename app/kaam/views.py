@@ -1496,9 +1496,9 @@ def manual_order_create(request):
     
     # Order Meta
     status = request.POST.get('status', 'confirmed')
-    payment_method = request.POST.get('payment_method', 'cod')
+    payment_method = request.POST.get('payment_method', 'cod').strip().lower()
     utr_number = request.POST.get('utr_number', '').strip()
-    payment_status = 'paid' if (payment_method == 'online' and utr_number) else 'pending'
+    payment_status = 'paid' if ((payment_method == 'online' and utr_number) or (payment_method == 'cod' and status == 'delivered')) else 'pending'
     
     # Lists of items
     product_ids = request.POST.getlist('product_ids[]')
@@ -1619,7 +1619,7 @@ def import_orders_csv(request):
                     'out for delivery': 'out_for_delivery',
                 }
                 row_status = status_alias.get(row_status_raw, row_status_raw) or status_fallback.lower()
-                pay_method = row.get('Payment Method', 'COD').lower()
+                pay_method = row.get('Payment Method', 'COD').strip().lower()
                 utr = row.get('UTR Number', '').strip()
                 total_val = row.get('Total Amount', '0').replace(',', '')
                 
@@ -1690,7 +1690,8 @@ def import_orders_csv(request):
                 row_status = row_status if row_status in valid_statuses else status_fallback.lower()
                 status_implies_confirmed = row_status in ['confirmed', 'packed', 'shipped', 'out_for_delivery', 'delivered']
                 is_confirmed = is_confirmed_from_col or status_implies_confirmed
-                payment_status = 'paid' if ('online' in pay_method and utr) else 'pending'
+                payment_method_value = 'online' if 'online' in pay_method else 'cod'
+                payment_status = 'paid' if ((payment_method_value == 'online' and utr) or (payment_method_value == 'cod' and row_status == 'delivered')) else 'pending'
                 
                 create_kwargs = {
                     'seller': seller,
@@ -1704,7 +1705,7 @@ def import_orders_csv(request):
                     'state': state,
                     'pincode': pin,
                     'status': row_status,
-                    'payment_method': 'online' if 'online' in pay_method else 'cod',
+                    'payment_method': payment_method_value,
                     'payment_status': payment_status,
                     'utr_number': utr,
                     'is_confirmed': is_confirmed,
