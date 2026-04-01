@@ -1,0 +1,300 @@
+/* ═══════════════════════════════════════════════════════
+   KAAM — Analytics CSS
+   Theme: Business Journal on Warm Paper
+═══════════════════════════════════════════════════════ */
+
+.analytics-page { padding-bottom: 60px; }
+.analytics-main {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 28px var(--gap) 0;
+}
+
+/* ─── ANALYTICS HEADER ─── */
+.analytics-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 28px; gap: 16px; flex-wrap: wrap;
+}
+.analytics-title {
+  font-family: var(--font-display); font-size: 28px; font-weight: 700;
+  color: var(--kaam-ink); margin-bottom: 4px;
+}
+.analytics-sub {
+  font-size: 13px; color: var(--kaam-stone-dark);
+  display: flex; align-items: center; gap: 6px;
+}
+.analytics-sub-live {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--kaam-success-soft);
+  border: 1px solid #9DBDA4;
+  border-radius: 999px; padding: 3px 10px;
+  font-size: 11px; font-weight: 700;
+  color: var(--kaam-success);
+}
+.analytics-sub-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--kaam-success);
+  animation: pulse 2s infinite;
+}
+
+.period-selector {
+  display: flex;
+  border: 1.5px solid var(--kaam-line-strong);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  background: var(--kaam-paper);
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 28px;
+}
+.period-selector::-webkit-scrollbar { display: none; }
+.period-btn {
+  padding: 9px 20px;
+  font-size: 13px; font-weight: 600;
+  color: var(--kaam-stone-dark);
+  background: transparent;
+  border: none; border-right: 1px solid var(--kaam-line);
+  cursor: pointer; transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+.period-btn:last-child { border-right: none; }
+.period-btn:hover { background: var(--kaam-paper-dark); color: var(--kaam-ink); }
+.period-btn.active {
+  background: var(--kaam-saffron-soft);
+  color: var(--kaam-soot);
+}
+
+/* ─── SECTION WRAPPER ─── */
+.analytics-section {
+  margin-bottom: 36px;
+}
+.analytics-section-header {
+  margin-bottom: 18px;
+}
+.analytics-section-title {
+  font-family: var(--font-display); font-size: 20px; font-weight: 600;
+  color: var(--kaam-ink);
+}
+.analytics-section-sub {
+  font-size: 13px; color: var(--kaam-stone-dark); margin-top: 2px;
+}
+
+/* ─── METRICS GRID ─── */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  gap: 14px;
+}
+.metric-card {
+  background: var(--kaam-milk);
+  border: 1px solid var(--kaam-line);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+}
+.metric-icon { font-size: 20px; margin-bottom: 10px; }
+.metric-label {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--kaam-stone-dark);
+  margin-bottom: 6px;
+}
+.metric-value {
+  font-family: var(--font-display);
+  font-size: 26px; font-weight: 700;
+  color: var(--kaam-ink); line-height: 1; margin-bottom: 6px;
+}
+.metrics-grid .metric-card:first-child .metric-value { font-size: 30px; }
+.metric-change {
+  font-size: 12px; font-weight: 600;
+  display: flex; align-items: center; gap: 4px;
+}
+.metric-change.up { color: var(--kaam-success); }
+.metric-change.down { color: var(--kaam-danger); }
+.metric-change-sub { font-size: 11px; color: var(--kaam-stone-dark); font-weight: 400; }
+
+/* ─── CATEGORY PERFORMANCE ─── */
+.category-layout {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.chart-card {
+  background: var(--kaam-milk);
+  border: 1px solid var(--kaam-line);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  box-shadow: var(--shadow-card);
+}
+.chart-card-title {
+  font-size: 14px; font-weight: 700;
+  color: var(--kaam-ink); margin-bottom: 16px;
+}
+
+/* Custom horizontal bars (no Chart.js for category) */
+.cat-bar-list { display: flex; flex-direction: column; gap: 12px; }
+.cat-bar-row {}
+.cat-bar-label {
+  display: flex; justify-content: space-between;
+  font-size: 13px; font-weight: 600; color: var(--kaam-soot);
+  margin-bottom: 5px;
+}
+.cat-bar-pct { font-family: var(--font-mono); font-size: 11px; color: var(--kaam-stone-dark); }
+.cat-bar-track {
+  height: 8px;
+  background: var(--kaam-paper-dark);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.cat-bar-fill {
+  height: 100%;
+  background: var(--kaam-saffron);
+  border-radius: 4px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.cat-bar-meta {
+  font-size: 11px; color: var(--kaam-stone-dark); margin-top: 3px;
+}
+
+/* Insight card */
+.insight-card {
+  background: var(--kaam-saffron-pale);
+  border: 1.5px solid var(--kaam-saffron);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  margin-bottom: 14px;
+}
+.insight-card-title {
+  font-size: 12px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--kaam-saffron-deep); margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.insight-card-body { font-size: 13px; color: var(--kaam-soot); line-height: 1.6; }
+.insight-card-body strong { color: var(--kaam-ink); }
+
+.insight-card.alert-card {
+  background: var(--kaam-danger-soft);
+  border-color: rgba(161,70,47,0.4);
+}
+.insight-card.alert-card .insight-card-title { color: var(--kaam-danger); }
+
+/* ─── WEEKLY CHARTS (Canvas) ─── */
+.weekly-charts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.weekly-chart-card {
+  background: var(--kaam-milk);
+  border: 1px solid var(--kaam-line);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+}
+.weekly-chart-title { font-size: 14px; font-weight: 700; color: var(--kaam-ink); margin-bottom: 4px; }
+.weekly-chart-delta {
+  font-size: 12px; font-weight: 600; margin-bottom: 14px;
+  display: flex; align-items: center; gap: 4px;
+}
+.weekly-chart-delta.up { color: var(--kaam-success); }
+.weekly-chart-delta.down { color: var(--kaam-danger); }
+.chart-canvas-wrap { height: 160px; }
+
+/* ─── BEST SELLING PRODUCTS ─── */
+.best-products-list { display: flex; flex-direction: column; gap: 8px; }
+.best-product-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 16px;
+  background: var(--kaam-milk);
+  border: 1px solid var(--kaam-line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+}
+.best-product-rank {
+  font-family: var(--font-mono); font-size: 14px; font-weight: 700;
+  color: var(--kaam-saffron); width: 24px; flex-shrink: 0;
+}
+.best-product-img {
+  width: 44px; height: 44px;
+  border-radius: var(--radius-sm); object-fit: cover;
+  border: 1px solid var(--kaam-line); flex-shrink: 0;
+  background: var(--kaam-paper);
+}
+.best-product-info { flex: 1; min-width: 0; }
+.best-product-title { font-size: 13px; font-weight: 600; color: var(--kaam-ink); }
+.best-product-cat { font-size: 11px; color: var(--kaam-stone-dark); }
+.best-product-stats {
+  text-align: right; flex-shrink: 0;
+}
+.best-product-orders { font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: var(--kaam-ink); }
+.best-product-revenue { font-size: 11px; color: var(--kaam-stone-dark); }
+
+/* ─── BUSINESS SUMMARY CARDS ─── */
+.biz-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+.biz-card {
+  background: var(--kaam-milk);
+  border: 1px solid var(--kaam-line);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  box-shadow: var(--shadow-card);
+}
+.biz-card-label { font-size: 11px; font-weight: 700; color: var(--kaam-stone-dark); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+.biz-card-value { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--kaam-ink); line-height: 1; margin-bottom: 4px; }
+.biz-card-sub { font-size: 11px; color: var(--kaam-stone-dark); }
+
+/* ─── PAYMENTS SECTION ─── */
+.payments-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.payment-data-card {
+  background: var(--kaam-milk); border: 1px solid var(--kaam-line);
+  border-radius: var(--radius-md); padding: 20px; box-shadow: var(--shadow-card);
+}
+.payment-bar-wrap { margin: 14px 0; }
+.payment-bar-label { font-size: 12px; font-weight: 600; color: var(--kaam-stone-dark); margin-bottom: 6px; }
+.payment-bar-track { height: 10px; background: var(--kaam-paper-dark); border-radius: 5px; overflow: hidden; }
+.payment-bar-fill { height: 100%; border-radius: 5px; background: var(--kaam-leaf); }
+.payment-bar-fill.cod { background: var(--kaam-stone-dark); }
+.payment-stat { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--kaam-ink); }
+.payment-sub { font-size: 12px; color: var(--kaam-stone-dark); }
+
+/* ─── STAR BREAKDOWN ─── */
+.star-breakdown-list { display: flex; flex-direction: column; gap: 8px; }
+.star-row { display: flex; align-items: center; gap: 10px; }
+.star-row-label { font-size: 12px; font-weight: 600; color: var(--kaam-ink); width: 20px; flex-shrink: 0; }
+.star-row-track { flex: 1; height: 8px; background: var(--kaam-paper-dark); border-radius: 4px; overflow: hidden; }
+.star-row-fill { height: 100%; border-radius: 4px; background: var(--kaam-saffron); }
+.star-row-count { font-family: var(--font-mono); font-size: 12px; color: var(--kaam-stone-dark); width: 24px; text-align: right; }
+
+/* ─── NOT RECEIVED ALERTS ─── */
+.not-received-list { display: flex; flex-direction: column; gap: 8px; }
+.not-received-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px;
+  background: var(--kaam-danger-soft);
+  border: 1px solid rgba(161,70,47,0.25);
+  border-radius: var(--radius-md);
+}
+.not-received-order { font-family: var(--font-mono); font-size: 12px; color: var(--kaam-danger); }
+.not-received-buyer { font-size: 13px; font-weight: 600; color: var(--kaam-ink); }
+.not-received-contact { font-size: 12px; color: var(--kaam-info); text-decoration: underline; }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 1024px) {
+  .metrics-grid { grid-template-columns: 1fr 1fr; }
+  .metrics-grid .metric-card:first-child { grid-column: span 2; }
+  .category-layout { grid-template-columns: 1fr; }
+  .biz-summary-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 640px) {
+  .weekly-charts { grid-template-columns: 1fr; }
+  .payments-grid { grid-template-columns: 1fr; }
+  .metrics-grid { grid-template-columns: 1fr 1fr; }
+}

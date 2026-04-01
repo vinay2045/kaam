@@ -1,0 +1,306 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block meta %}
+<title>Kaam — Your Shop. Your Link. Your Orders.</title>
+<meta name="description" content="The simplest order management platform for Indian Instagram and WhatsApp sellers. Get your store link today.">
+<meta property="og:title" content="Kaam — Sell from your link">
+<meta property="og:description" content="Built for WhatsApp-first sellers who need a storefront, clean order flow, and live business visibility.">
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/landing.css' %}">
+{% endblock %}
+
+{% block body %}
+<!-- NAV -->
+<header class="landing-nav" role="banner">
+  <div class="landing-nav-inner">
+    <a href="/" class="kaam-wordmark">
+      <div class="kaam-wordmark-stamp">
+        <span class="kaam-wordmark-text">kaam</span>
+      </div>
+    </a>
+
+    <!-- Category rail -->
+    <div class="landing-nav-center">
+      <span class="nav-category-link">Fashion</span>
+      <span class="nav-category-divider">·</span>
+      <span class="nav-category-link">Home</span>
+      <span class="nav-category-divider">·</span>
+      <span class="nav-category-link">Food</span>
+      <span class="nav-category-divider">·</span>
+      <span class="nav-category-link">Gifts</span>
+      <span class="nav-category-divider">·</span>
+      <span class="nav-category-link">Accessories</span>
+    </div>
+
+    <div class="landing-nav-right" style="display:flex;align-items:center;">
+      <button class="theme-toggle" type="button" title="Toggle theme" aria-label="Toggle theme" onclick="toggleTheme()" style="background:transparent;border:none;cursor:pointer;font-size:22px;margin-right:16px;color:var(--kaam-ink);display:flex;align-items:center">
+         <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="1em" height="1em" fill="currentColor" class="theme-toggle__expand" viewBox="0 0 32 32"><clipPath id="theme-toggle__expand__cutout"><path d="M0-11h25a1 1 0 0017 13v30H0Z" /></clipPath><g clip-path="url(#theme-toggle__expand__cutout)"><circle cx="16" cy="16" r="8.4" /><path d="M18.3 3.2c0 1.3-1 2.3-2.3 2.3s-2.3-1-2.3-2.3S14.7.9 16 .9s2.3 1 2.3 2.3zm-4.6 25.6c0-1.3 1-2.3 2.3-2.3s2.3 1 2.3 2.3-1 2.3-2.3 2.3-2.3-1-2.3-2.3zm15.1-10.5c-1.3 0-2.3-1-2.3-2.3s1-2.3 2.3-2.3 2.3 1 2.3 2.3-1 2.3-2.3 2.3zM3.2 13.7c1.3 0 2.3 1 2.3 2.3s-1 2.3-2.3 2.3S.9 17.3.9 16s1-2.3 2.3-2.3zm5.8-7C9 7.9 7.9 9 6.7 9S4.4 8 4.4 6.7s1-2.3 2.3-2.3S9 5.4 9 6.7zm16.3 21c-1.3 0-2.3-1-2.3-2.3s1-2.3 2.3-2.3 2.3 1 2.3 2.3-1 2.3-2.3 2.3zm2.4-21c0 1.3-1 2.3-2.3 2.3S23 7.9 23 6.7s1-2.3 2.3-2.3 2.4 1 2.4 2.3zM6.7 23C8 23 9 24 9 25.3s-1 2.3-2.3 2.3-2.3-1-2.3-2.3 1-2.3 2.3-2.3z" /></g></svg>
+      </button>
+      <a href="{% url 'login' %}" class="nav-login-link">Login</a>
+      <a href="{% url 'login' %}" class="btn btn-primary btn-sm">Get Started</a>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero" aria-label="Hero section">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <div class="hero-eyebrow">
+        ✦ Built for Indian Sellers
+      </div>
+      <h1 class="hero-h1">
+        Sell from your<br>link. Run orders<br>without <em>chaos.</em>
+      </h1>
+      <p class="hero-body">
+        Built for WhatsApp-first sellers who need a storefront, clean order flow, and live business visibility — all in one link.
+      </p>
+      <div class="hero-cta-group">
+        <a href="{% url 'login' %}" class="btn btn-primary btn-lg">Start Selling on Kaam →</a>
+        <a href="{% url 'trace_order' %}" class="btn btn-ghost">Track an Order</a>
+      </div>
+      <p class="hero-proof">
+        <span class="hero-proof-dot">₹</span>
+        999/month
+        <span class="hero-proof-dot">·</span>
+        No setup fees
+        <span class="hero-proof-dot">·</span>
+        Built for small Indian brands
+      </p>
+    </div>
+
+    <!-- Right: Storefront Collage -->
+    <div class="hero-right">
+      <div class="hero-collage">
+        <!-- Order Receipt -->
+        <div class="collage-receipt">
+          <div class="receipt-header">
+            <span class="receipt-store-name">Priya's Boutique</span>
+            <span class="receipt-id">ORD-20260330-512</span>
+          </div>
+          <div class="receipt-item"><span>Blue Oversized Shirt · M — Green × 2</span><span>₹1,798</span></div>
+          <div class="receipt-item"><span>Mango Pickle · Regular × 1</span><span>₹299</span></div>
+          <div class="receipt-total"><span>Total</span><span>₹2,097</span></div>
+        </div>
+
+        <!-- Product Thumbnails -->
+        <div class="collage-products">
+          <div class="collage-product-thumb">
+            <i class="ri-t-shirt-line" style="color:var(--kaam-saffron); margin-right:4px;"></i> Blue Oversized Shirt
+            <div class="price">₹899</div>
+          </div>
+          <div class="collage-product-thumb">
+            <i class="ri-restaurant-fill" style="color:var(--kaam-saffron); margin-right:4px;"></i> Mango Pickle
+            <div class="price">₹299</div>
+          </div>
+          <div class="collage-product-thumb">
+            <i class="ri-vip-diamond-line" style="color:var(--kaam-saffron); margin-right:4px;"></i> Handloom Dupatta
+            <div class="price">₹650</div>
+          </div>
+        </div>
+
+        <!-- Status Strip -->
+        <div class="collage-status">
+          <span class="collage-status-dot"></span>
+          Order Shipped — Expected in 2-3 days
+        </div>
+
+        <!-- Revenue Tag -->
+        <div class="collage-revenue">
+          <div>
+            <div class="collage-revenue-label">This Month's Revenue</div>
+            <div class="collage-revenue-value">₹1,01,416</div>
+          </div>
+          <div class="collage-revenue-change">↗ +549% vs last month</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TRUST RAIL -->
+<div class="trust-rail" role="complementary">
+  <div class="trust-rail-inner">
+    <div class="trust-item">
+      <span class="trust-item-icon"><i class="ri-link"></i></span>
+      One store link
+    </div>
+    <div class="trust-item">
+      <span class="trust-item-icon"><i class="ri-user-smile-line"></i></span>
+      No buyer signup
+    </div>
+    <div class="trust-item">
+      <span class="trust-item-icon"><i class="ri-box-3-line"></i></span>
+      Track every order
+    </div>
+    <div class="trust-item">
+      <span class="trust-item-icon"><i class="ri-bar-chart-grouped-line"></i></span>
+      Live analytics
+    </div>
+    <div class="trust-item">
+      <span class="trust-item-icon">🔁</span>
+      Built for repeat sellers
+    </div>
+  </div>
+</div>
+
+<!-- PROBLEM / SOLUTION -->
+<section class="prob-sol" aria-label="Problem and solution">
+  <div class="prob-sol-inner">
+    <!-- Problem column -->
+    <div>
+      <div class="prob-col-label">How sellers work today</div>
+      <div class="prob-note">
+        <div class="prob-note-title"><i class="ri-message-3-line" style="margin-right:4px;"></i> Chat overload</div>
+        <div class="prob-note-body">Orders buried under 100+ WhatsApp messages. Missed orders = lost money.</div>
+      </div>
+      <div class="prob-note">
+        <div class="prob-note-title"><i class="ri-book-read-line" style="margin-right:4px;"></i> Notebook tracking</div>
+        <div class="prob-note-body">Handwritten ledgers get lost, smudge in the rain, and can't be searched.</div>
+      </div>
+      <div class="prob-note">
+        <div class="prob-note-title"><i class="ri-error-warning-line" style="margin-right:4px;"></i> Missed follow-ups</div>
+        <div class="prob-note-body">No system to know who paid, who didn't, and who needs to be chased.</div>
+      </div>
+      <div class="prob-note">
+        <div class="prob-note-title"><i class="ri-camera-lens-line" style="margin-right:4px;"></i> DM confusion</div>
+        <div class="prob-note-body">Different address on each customer message. No single source of truth.</div>
+      </div>
+    </div>
+
+    <!-- Solution column -->
+    <div>
+      <div class="prob-col-label">What Kaam fixes</div>
+      <div class="sol-panel">
+        <div class="sol-panel-title"><i class="ri-link" style="color:var(--kaam-saffron); margin-right:4px;"></i> Your storefront link</div>
+        <div class="sol-panel-body">Share one link. Buyers fill a clean form. Orders come to you structured and sorted.</div>
+        <div class="sol-panel-proof">✓ Share once, sell forever</div>
+      </div>
+      <div class="sol-panel">
+        <div class="sol-panel-title"><i class="ri-dashboard-2-line" style="color:var(--kaam-saffron); margin-right:4px;"></i> Dispatch board</div>
+        <div class="sol-panel-body">Every order in one place. Confirm, pack, ship, deliver — all in a few clicks.</div>
+        <div class="sol-panel-proof">✓ No WhatsApp hunting</div>
+      </div>
+      <div class="sol-panel">
+        <div class="sol-panel-title"><i class="ri-bank-card-line" style="color:var(--kaam-saffron); margin-right:4px;"></i> Payment visibility</div>
+        <div class="sol-panel-body">See who paid online, who owes COD, and your total revenue — live.</div>
+        <div class="sol-panel-proof">✓ Real-time cash tracking</div>
+      </div>
+      <div class="sol-panel">
+        <div class="sol-panel-title"><i class="ri-truck-line" style="color:var(--kaam-saffron); margin-right:4px;"></i> Delivery trace</div>
+        <div class="sol-panel-body">Buyers track their own order. You stop answering "what's my status?" calls.</div>
+        <div class="sol-panel-proof">✓ Self-serve order tracking</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-it-works" aria-label="How Kaam works">
+  <div class="how-it-works-inner">
+    <div class="how-header">
+      <div class="eyebrow">How it works</div>
+      <h2>From zero to selling in minutes.</h2>
+    </div>
+    <div class="how-tape">
+      <div class="how-block">
+        <span class="how-number">01</span>
+        <div class="how-title">Get your kaam.com/yourname link</div>
+        <div class="how-body">Your unique storefront is ready the moment your account is created. Share it anywhere — bio, DMs, stories.</div>
+        <div class="how-connector">→</div>
+      </div>
+      <div class="how-block">
+        <span class="how-number">02</span>
+        <div class="how-title">Add products and variants</div>
+        <div class="how-body">Upload product photos, set prices, and list sizes and colours in plain text. No complicated setup.</div>
+        <div class="how-connector">→</div>
+      </div>
+      <div class="how-block">
+        <span class="how-number">03</span>
+        <div class="how-title">Share once, manage orders from the dashboard</div>
+        <div class="how-body">Buyers place orders through your link with no account needed. You see everything in your dashboard — live.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TRACE ORDER STRIP -->
+<section class="landing-trace" aria-label="Order tracking">
+  <div class="landing-trace-inner">
+    <div class="landing-trace-left">
+      <div class="landing-trace-label">Track Your Order</div>
+      <div class="landing-trace-hint">Enter your order ID to see the current delivery status.</div>
+    </div>
+    <form class="landing-trace-right" action="{% url 'trace_order' %}" method="POST">
+      {% csrf_token %}
+      <input type="text" class="input-field" name="order_id"
+             placeholder="Enter Order ID e.g. ORD-20260330-512"
+             id="landing-trace-input" autocomplete="off">
+      <button type="submit" class="btn btn-primary" id="landing-trace-btn">Track →</button>
+    </form>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="landing-footer" role="contentinfo" style="background: var(--kaam-paper); color: var(--kaam-ink); padding: 5rem 2rem 2rem 2rem; border-top: 1px solid var(--kaam-stone);">
+  <div class="landing-footer-inner" style="max-width: var(--max-w); margin: 0 auto; display: block;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 3rem; margin-bottom: 4rem;">
+      <!-- Brand Col -->
+      <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <div class="kaam-wordmark">
+          <div class="kaam-wordmark-stamp">
+            <span class="kaam-wordmark-text">kaam</span>
+          </div>
+        </div>
+        <div style="opacity: 0.7; font-size: 0.95rem; line-height: 1.6; max-width: 250px;">
+          Commerce infrastructure for independent Indian sellers. Make your setup permanent.
+        </div>
+      </div>
+
+      <!-- Links Col 1 -->
+      <div style="display: flex; flex-direction: column; gap: 1.2rem;">
+        <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.5; margin: 0;">Platform</h4>
+        <a href="{% url 'login' %}" style="text-decoration: none; color: inherit; opacity: 0.8; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">Seller Login</a>
+        <a href="{% url 'trace_order' %}" style="text-decoration: none; color: inherit; opacity: 0.8; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">Track Order</a>
+        <a href="#" style="text-decoration: none; color: inherit; opacity: 0.8; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">Pricing</a>
+      </div>
+
+      <!-- Links Col 2 -->
+      <div style="display: flex; flex-direction: column; gap: 1.2rem;">
+        <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.5; margin: 0;">Company</h4>
+        <a href="#" style="text-decoration: none; color: inherit; opacity: 0.8; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">About Us</a>
+        <a href="{% url 'contact' %}" style="text-decoration: none; color: inherit; opacity: 0.8; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">Contact Support</a>
+        <a href="#" style="text-decoration: none; color: inherit; opacity: 0.8; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">Terms of Service</a>
+      </div>
+
+      <!-- Socials Col -->
+      <div style="display: flex; flex-direction: column; gap: 1.2rem;">
+        <h4 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.5; margin: 0;">Connect</h4>
+        <div style="display: flex; gap: 1rem;">
+          <a href="#" aria-label="Instagram" style="font-size: 1.5rem; color: inherit; opacity: 0.8; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'"><i class="ri-instagram-line"></i></a>
+          <a href="#" aria-label="Twitter/X" style="font-size: 1.5rem; color: inherit; opacity: 0.8; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'"><i class="ri-twitter-x-line"></i></a>
+          <a href="#" aria-label="LinkedIn" style="font-size: 1.5rem; color: inherit; opacity: 0.8; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'"><i class="ri-linkedin-fill"></i></a>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Footer Bottom -->
+    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.85rem; opacity: 0.5;">
+      <div>© 2026 Kaam Commerce Inc.</div>
+      <div>Designed in India.</div>
+    </div>
+  </div>
+</footer>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Smooth landing page trace form
+document.getElementById('landing-trace-input')?.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') e.target.closest('form').submit();
+});
+</script>
+{% endblock %}

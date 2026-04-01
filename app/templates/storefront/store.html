@@ -1,0 +1,367 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ seller.business_name }} — Order on Kaam</title>
+  <meta name="description" content="Browse and order from {{ seller.business_name }}. Fast, simple, no signup needed.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/base.css' %}?v={% now 'U' %}">
+  <link rel="stylesheet" href="{% static 'css/components.css' %}?v={% now 'U' %}">
+  <link rel="stylesheet" href="{% static 'css/storefront.css' %}?v={% now 'U' %}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/theme-toggles@4.10.1/css/expand.min.css">
+  <script>
+    (function() {
+      var theme = localStorage.getItem('theme');
+      if (!theme) theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+</head>
+<body>
+<div class="storefront-page">
+
+  <!-- Header -->
+  <header class="sf-header">
+    <div class="sf-header-inner">
+      <div class="sf-biz-name">{{ seller.business_name }}</div>
+      <div class="sf-progress-ruler" style="max-width:200px">
+        <div class="sf-progress-fill" id="sf-progress-fill" style="width:0%"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <button class="theme-toggle" type="button" title="Toggle theme" aria-label="Toggle theme" onclick="toggleTheme()" style="background:transparent;border:none;cursor:pointer;font-size:22px;color:var(--kaam-ink);display:flex;align-items:center">
+           <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="1em" height="1em" fill="currentColor" class="theme-toggle__expand" viewBox="0 0 32 32"><clipPath id="theme-toggle__expand__cutout"><path d="M0-11h25a1 1 0 0017 13v30H0Z" /></clipPath><g clip-path="url(#theme-toggle__expand__cutout)"><circle cx="16" cy="16" r="8.4" /><path d="M18.3 3.2c0 1.3-1 2.3-2.3 2.3s-2.3-1-2.3-2.3S14.7.9 16 .9s2.3 1 2.3 2.3zm-4.6 25.6c0-1.3 1-2.3 2.3-2.3s2.3 1 2.3 2.3-1 2.3-2.3 2.3-2.3-1-2.3-2.3zm15.1-10.5c-1.3 0-2.3-1-2.3-2.3s1-2.3 2.3-2.3 2.3 1 2.3 2.3-1 2.3-2.3 2.3zM3.2 13.7c1.3 0 2.3 1 2.3 2.3s-1 2.3-2.3 2.3S.9 17.3.9 16s1-2.3 2.3-2.3zm5.8-7C9 7.9 7.9 9 6.7 9S4.4 8 4.4 6.7s1-2.3 2.3-2.3S9 5.4 9 6.7zm16.3 21c-1.3 0-2.3-1-2.3-2.3s1-2.3 2.3-2.3 2.3 1 2.3 2.3-1 2.3-2.3 2.3zm2.4-21c0 1.3-1 2.3-2.3 2.3S23 7.9 23 6.7s1-2.3 2.3-2.3 2.4 1 2.4 2.3zM6.7 23C8 23 9 24 9 25.3s-1 2.3-2.3 2.3-2.3-1-2.3-2.3 1-2.3 2.3-2.3z" /></g></svg>
+        </button>
+        <div class="sf-step-counter" id="sf-step-counter">Let's go →</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="sf-main">
+    <div class="sf-step-wrap">
+
+      <!-- STEP 0: Welcome -->
+      <div class="sf-step" data-step="0">
+        <div class="sf-welcome">
+          <div class="sf-welcome-biz">{{ seller.business_name }}</div>
+          <h1 class="sf-welcome-h">Place Your Order</h1>
+          <p class="sf-welcome-body">
+            Browse products, fill your details, and place your order — all in one spot.
+            No account needed.
+          </p>
+          <div class="sf-welcome-features">
+            <span class="sf-welcome-feature"><i class="ri-whatsapp-line"></i> WhatsApp updates</span>
+            <span class="sf-welcome-feature"><i class="ri-box-3-line"></i> Track your order</span>
+            <span class="sf-welcome-feature"><i class="ri-bank-card-line"></i> COD or Online</span>
+          </div>
+          <button class="btn btn-primary btn-lg" onclick="nextStep()" id="welcome-start-btn">
+            Start Ordering →
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 1: Buyer Details -->
+      <div class="sf-step" data-step="1">
+        <h2 class="sf-step-title">Your Details</h2>
+        <p class="sf-step-subtitle">So we know who to send the order to.</p>
+        <div class="sf-form-card">
+          <div class="sf-form-body">
+            <div class="input-group">
+              <label for="buyer-name" class="input-label">Full Name *</label>
+              <input type="text" id="buyer-name" class="input-field" placeholder="Priya Sharma" autocomplete="name">
+            </div>
+            <div class="input-group">
+              <label for="buyer-email" class="input-label">Email *</label>
+              <input type="email" id="buyer-email" class="input-field" placeholder="priya@email.com" autocomplete="email">
+            </div>
+            <div class="input-group">
+              <label for="buyer-wa" class="input-label">WhatsApp Number *</label>
+              <input type="tel" id="buyer-wa" class="input-field" placeholder="+91 98765 43210" autocomplete="tel">
+              <span class="input-hint">Order confirmation will be sent here.</span>
+            </div>
+            <div class="input-group">
+              <label for="buyer-ig" class="input-label">Instagram Username <span style="color:var(--kaam-stone-dark);font-weight:400">(optional)</span></label>
+              <input type="text" id="buyer-ig" class="input-field" placeholder="@yourname" autocomplete="off">
+            </div>
+          </div>
+          <div class="sf-form-footer">
+            <button class="btn btn-ghost" onclick="prevStep()">← Back</button>
+            <button class="btn btn-primary" onclick="nextStep()">Continue →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2: Delivery Address -->
+      <div class="sf-step" data-step="2">
+        <h2 class="sf-step-title">Delivery Address</h2>
+        <p class="sf-step-subtitle">Where should we send your order?</p>
+        <div class="sf-form-card">
+          <div class="sf-form-body">
+            <div class="input-group">
+              <label for="country" class="input-label">Country</label>
+              <select id="country" class="input-field" autocomplete="country">
+                <option value="India" selected>India</option>
+                <option value="Nepal">Nepal</option>
+                <option value="Bangladesh">Bangladesh</option>
+                <option value="Sri Lanka">Sri Lanka</option>
+                <option value="UAE">UAE</option>
+                <option value="USA">USA</option>
+                <option value="UK">UK</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label for="addr1" class="input-label">Address Line 1 *</label>
+              <textarea id="addr1" class="input-field" rows="2" placeholder="House no., street, colony…" autocomplete="address-line1"></textarea>
+            </div>
+            <div class="input-group">
+              <label for="addr2" class="input-label">Address Line 2 <span style="color:var(--kaam-stone-dark);font-weight:400">(optional)</span></label>
+              <input type="text" id="addr2" class="input-field" placeholder="Landmark, area…" autocomplete="address-line2">
+            </div>
+            <div class="grid-2">
+              <div class="input-group">
+                <label for="city" class="input-label">City *</label>
+                <input type="text" id="city" class="input-field" placeholder="Mumbai" autocomplete="address-level2">
+              </div>
+              <div class="input-group">
+                <label for="state" class="input-label">State *</label>
+                <input type="text" id="state" class="input-field" placeholder="Maharashtra" autocomplete="address-level1">
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="pincode" class="input-label">Pincode *</label>
+              <input type="text" id="pincode" class="input-field" placeholder="400001" maxlength="10" autocomplete="postal-code" inputmode="numeric">
+            </div>
+          </div>
+          <div class="sf-form-footer">
+            <button class="btn btn-ghost" onclick="prevStep()">← Back</button>
+            <button class="btn btn-primary" onclick="nextStep()">Continue →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3: Product Selection -->
+      <div class="sf-step" data-step="3">
+        <h2 class="sf-step-title">Pick Your Products</h2>
+        <p class="sf-step-subtitle">{{ products.count }} product{{ products.count|pluralize }} available. Tap to select.</p>
+
+        <div class="input-prefix-wrap" style="margin-bottom: 20px;">
+          <i class="ri-search-line input-prefix"></i>
+          <input type="text" id="sf-product-search" class="input-field" placeholder="Search by name, category, or product ID..." oninput="filterStoreProducts(this.value)">
+        </div>
+
+        <div class="sf-products-list" id="sf-products-list">
+          {% for product in products %}
+          <div class="product-slip" data-product-id="{{ product.id }}" data-pid="{{ product.product_id }}">
+            <div class="product-slip-header" onclick="toggleProduct('{{ product.id }}')">
+              {% if product.image %}
+              <img src="{{ product.image.url }}" alt="{{ product.title }}" class="product-slip-img">
+              {% else %}
+              <div class="product-slip-img" style="display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--kaam-stone)"><i class="ri-camera-lens-line"></i></div>
+              {% endif %}
+              <div class="product-slip-info">
+                <div class="product-slip-cat">{{ product.category }} · {{ product.subcategory }}</div>
+                <div class="product-slip-title">{{ product.title }}</div>
+                <div class="product-slip-price">₹{{ product.price }}</div>
+                <div style="margin-top:4px"><span style="font-family:monospace;font-size:10px;font-weight:700;background:rgba(245,166,35,0.12);color:#b07d00;padding:2px 7px;border-radius:99px;letter-spacing:0.05em;border:1px solid rgba(245,166,35,0.3);">{{ product.product_id }}</span></div>
+
+              </div>
+              <div class="product-slip-toggle">
+                <span class="toggle-text">+ Add</span>
+              </div>
+            </div>
+            <div class="product-input-rows" id="inputs-{{ product.id }}"></div>
+            <div class="add-another-link" onclick="addAnotherItem('{{ product.id }}')" style="display:none" id="add-more-{{ product.id }}">
+              + Add another variant
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- Order Summary Basket (Non-Sticky) -->
+        <style>
+          .sf-products-list { height: 38vh; max-height: 38vh; overflow-y: scroll; padding-right: 8px; scrollbar-gutter: stable; scrollbar-width: auto; scrollbar-color: rgba(245,166,35,0.85) rgba(255,255,255,0.06); }
+          .sf-products-list .product-slip { flex-shrink: 0; }
+          .sf-products-list::-webkit-scrollbar { width: 8px; }
+          .sf-products-list::-webkit-scrollbar-track { background: rgba(255,255,255,0.06); border-radius: 999px; }
+          .sf-products-list::-webkit-scrollbar-thumb { background: rgba(245,166,35,0.6); border-radius: 999px; }
+          .sf-products-list::-webkit-scrollbar-thumb:hover { background: rgba(245,166,35,0.85); }
+          .sf-order-summary-basket { display:none; margin-top:16px; padding:12px; background:#171311; border:1px solid rgba(245,166,35,0.24); border-radius:14px; box-shadow:var(--shadow-card); color:#FFFDF8; }
+          .sf-order-summary-basket.visible { display:block; animation: fadeUp 0.3s ease; }
+          .sf-basket-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px; }
+          .sf-basket-title { font-size:15px; font-weight:700; color:#FFFDF8; }
+          .sf-basket-count-badge { font-size:11px; font-weight:700; color:#111; background:var(--kaam-saffron); border-radius:999px; padding:2px 10px; min-width:56px; text-align:center; }
+          .sf-basket-layout { display:grid; grid-template-columns: 1fr 150px; gap:10px; align-items:start; }
+          .sf-summary-items { display:flex; flex-direction:column; gap:6px; max-height:110px; overflow-y:auto; padding-right:4px; }
+          .sf-summary-items::-webkit-scrollbar { width: 6px; }
+          .sf-summary-items::-webkit-scrollbar-track { background: rgba(255,255,255,0.08); border-radius: 999px; }
+          .sf-summary-items::-webkit-scrollbar-thumb { background: rgba(245,166,35,0.75); border-radius: 999px; }
+          .sf-summary-line { display:grid; grid-template-columns: 1fr auto; gap:8px; align-items:center; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:6px 8px; }
+          .sf-summary-name { font-size:13px; font-weight:600; color:#FFFDF8; line-height:1.25; }
+          .sf-summary-meta { font-size:11px; color:rgba(255,253,248,0.72); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+          .sf-summary-amount { font-family:var(--font-mono); font-size:13px; font-weight:700; color:var(--kaam-saffron); white-space:nowrap; }
+          .sf-price-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:8px; }
+          .sf-price-line { display:flex; justify-content:space-between; align-items:center; font-size:11px; color:rgba(255,253,248,0.76); margin-bottom:6px; }
+          .sf-price-line.total { margin-top:6px; padding-top:6px; border-top:1px dashed rgba(245,166,35,0.45); font-size:13px; color:#FFFDF8; font-weight:700; }
+          #summary-total { font-family:var(--font-mono); font-size:18px; font-weight:700; color:#FFFDF8; }
+          @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+          @media (max-width: 768px) { .sf-products-list { height: 34vh; max-height: 34vh; } .sf-basket-layout { grid-template-columns: 1fr; } }
+        </style>
+        <div class="sf-order-summary-basket" id="order-summary-strip">
+          <div class="sf-basket-head">
+            <div class="sf-basket-title">Basket</div>
+            <div id="summary-count-badge" class="sf-basket-count-badge">0 items</div>
+          </div>
+          <div class="sf-basket-layout">
+            <div>
+              <div id="summary-items" class="sf-summary-items"></div>
+            </div>
+            <div class="sf-price-card">
+              <div class="sf-price-line"><span>Subtotal</span><span id="summary-subtotal">₹0</span></div>
+              <div class="sf-price-line"><span>Delivery</span><span>Free</span></div>
+              <div class="sf-price-line total"><span>Total</span><span id="summary-total">₹0</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:24px;display:flex;gap:10px">
+          <button class="btn btn-ghost" onclick="prevStep()">← Back</button>
+          <button class="btn btn-primary" onclick="nextStep()">Review Order →</button>
+        </div>
+      </div>
+
+      <!-- STEP 4: Review + Payment Selection -->
+      <div class="sf-step" data-step="4">
+        <h2 class="sf-step-title">Review &amp; Pay</h2>
+        <p class="sf-step-subtitle">Check your order and choose how you want to pay.</p>
+
+        <!-- Order Summary Card -->
+        <div class="order-summary-card" style="margin-bottom:24px">
+          <div class="order-summary-header">Your Order</div>
+          <div id="step4-order-items"></div>
+          <div class="order-summary-total">
+            <div class="order-summary-total-label">Total Amount</div>
+            <div class="order-summary-total-amount" id="step4-total">₹0</div>
+          </div>
+        </div>
+
+        <!-- Delivery summary -->
+        <div class="card-paper" style="margin-bottom:24px;font-size:13px">
+          <div class="expand-section-title">Delivering to</div>
+          <div id="step4-address" style="line-height:1.8;color:var(--kaam-soot)">—</div>
+        </div>
+
+        <!-- Payment methods -->
+        <h3 style="margin-bottom:14px;font-size:16px;font-weight:700">Choose Payment Method</h3>
+        <div class="payment-options">
+          <div class="payment-ticket" data-method="online" onclick="selectPayment('online')" id="ticket-online">
+            <div class="payment-ticket-icon"><i class="ri-smartphone-line"></i></div>
+            <div class="payment-ticket-text">
+              <div class="payment-ticket-title">Pay Online</div>
+              <div class="payment-ticket-desc">UPI, Google Pay, PhonePe, Paytm — any app.</div>
+            </div>
+            <div class="payment-ticket-radio" id="radio-online"></div>
+          </div>
+          <div class="payment-ticket" data-method="cod" onclick="selectPayment('cod')" id="ticket-cod">
+            <div class="payment-ticket-icon"><i class="ri-cash-line"></i></div>
+            <div class="payment-ticket-text">
+              <div class="payment-ticket-title">Cash on Delivery</div>
+              <div class="payment-ticket-desc">Pay in cash when your order arrives.</div>
+            </div>
+            <div class="payment-ticket-radio" id="radio-cod"></div>
+          </div>
+        </div>
+
+        <div style="margin-top:24px;display:flex;gap:10px">
+          <button class="btn btn-ghost" onclick="prevStep()">← Back</button>
+          <button class="btn btn-primary" onclick="step4Next()" id="step4-next-btn" data-action="next">
+            Proceed to Payment →
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 5: Payment Proof (Online only) -->
+      <div class="sf-step" data-step="5">
+        <h2 class="sf-step-title">Upload Payment Proof</h2>
+        <p class="sf-step-subtitle">Pay via UPI and share your payment screenshot.</p>
+
+        <!-- UPI Info -->
+        <div class="upi-info-box" style="margin-bottom:20px">
+          <div class="upi-info-header">Pay to UPI ID</div>
+          <div class="upi-id-row">
+            <span class="upi-id-value">{% if seller.upi_id %}{{ seller.upi_id }}{% else %}{{ seller.whatsapp_number }}@upi{% endif %}</span>
+            <button class="copy-btn" onclick="copyToClipboard('{% if seller.upi_id %}{{ seller.upi_id }}{% else %}{{ seller.whatsapp_number }}@upi{% endif %}', this)"><i class="ri-clipboard-line"></i> Copy</button>
+          </div>
+          <span class="upi-amount" id="upi-amount-display"></span>
+        </div>
+
+        <!-- Upload Zone -->
+        <div class="upload-zone" id="payment-upload-zone" style="margin-bottom:16px">
+          <input type="file" id="payment-screenshot-input" accept="image/*" capture="environment">
+          <div class="upload-zone-icon"><i class="ri-camera-lens-line"></i></div>
+          <div class="upload-zone-label">Upload payment screenshot</div>
+          <div class="upload-zone-hint">Take a screenshot of your UPI payment confirmation</div>
+        </div>
+        <img src="" alt="Payment proof" id="payment-preview"
+             style="display:none;width:100%;max-width:300px;border-radius:12px;border:1px solid var(--kaam-line);margin-bottom:16px">
+
+        <div class="input-group" style="margin-bottom:24px">
+          <label class="input-label">UTR / Reference Number <span style="color:var(--kaam-stone-dark);font-weight:400">(optional if screenshot uploaded)</span></label>
+          <input type="text" id="utr-input" class="input-field mono" placeholder="UTR reference from your UPI app">
+        </div>
+
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-ghost" onclick="prevStep()">← Back</button>
+          <button class="btn btn-primary" onclick="submitOrder()" id="submit-btn">
+            Place Order →
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- .sf-main -->
+
+
+
+</div><!-- .storefront-page -->
+
+
+<script>
+window.SELLER_USERNAME = '{{ seller.username }}';
+window.PRODUCTS_DATA = {{ products_json|safe }}; // Lint IDs: 987b5f26-4a55-41c0-917c-abd54abfa1e9, 1ea0da15-559d-4821-ace9-2f5d99598ea3
+function filterStoreProducts(query) {
+  const q = query.toLowerCase().trim();
+  const slips = document.querySelectorAll('.product-slip');
+  slips.forEach(slip => {
+    const title = slip.querySelector('.product-slip-title')?.textContent.toLowerCase() || '';
+    const cat = slip.querySelector('.product-slip-cat')?.textContent.toLowerCase() || '';
+    const pid = (slip.dataset.pid || '').toLowerCase();
+    if (!q || title.includes(q) || cat.includes(q) || pid.includes(q)) {
+      slip.style.display = 'block';
+    } else {
+      slip.style.display = 'none';
+    }
+  });
+}
+</script>
+<script src="{% static 'js/utils.js' %}?v={% now 'U' %}"></script>
+<script src="{% static 'js/storefront.js' %}?v={% now 'U' %}"></script>
+
+<script>
+function getCookie(name) {
+  let v = null;
+  if (document.cookie) {
+    document.cookie.split(';').forEach(c => {
+      c = c.trim();
+      if (c.startsWith(name + '=')) v = decodeURIComponent(c.slice(name.length + 1));
+    });
+  }
+  return v;
+}
+</script>
+</body>
+</html>

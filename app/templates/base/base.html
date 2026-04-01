@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  {% block meta %}
+  <title>Kaam — Your Shop. Your Link. Your Orders.</title>
+  <meta name="description" content="The simplest order management platform for Indian Instagram sellers.">
+  {% endblock %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,800&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/base.css' %}?v={% now 'U' %}">
+  <link rel="stylesheet" href="{% static 'css/components.css' %}?v={% now 'U' %}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/theme-toggles@4.10.1/css/expand.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+  <script>
+    (function() {
+      var theme = localStorage.getItem('theme');
+      if (!theme) theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  {% block extra_css %}{% endblock %}
+  {% block head_js %}{% endblock %}
+</head>
+<body>
+<div id="kaam-global-loader" class="kaam-loader-bar"></div>
+<script>
+  // Show loader on page navigation
+  window.addEventListener('beforeunload', function() {
+    document.getElementById('kaam-global-loader').classList.add('loading');
+  });
+</script>
+{% block body %}{% endblock %}
+
+<!-- Global Custom Modals -->
+<div id="kaam-modal-overlay" class="kaam-modal-overlay">
+  <div class="kaam-modal-card">
+    <div id="kaam-modal-title" class="kaam-modal-title">Alert</div>
+    <div id="kaam-modal-body" class="kaam-modal-body">Message contents...</div>
+    <div id="kaam-modal-footer" class="kaam-modal-footer"></div>
+  </div>
+</div>
+
+{% load static %}
+<script src="{% static 'js/utils.js' %}?v={% now 'U' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,427 @@
+{% extends "base/base_seller.html" %}
+{% load static %}
+{% load kaam_filters %}
+
+{% block meta %}<title>Analytics — Kaam</title>{% endblock %}
+{% block mob_anal_active %}active{% endblock %}
+
+{% block seller_css %}<link rel="stylesheet" href="{% static 'css/analytics.css' %}">{% endblock %}
+
+{% block dashboard_content %}
+<div class="analytics-main analytics-page">
+
+  <!-- Header -->
+  <div class="analytics-header" style="display:flex; justify-content:space-between; align-items:flex-end; gap:20px">
+    <div>
+      <div class="eyebrow">Business Intelligence</div>
+      <h1 class="analytics-title">Your Store Report</h1>
+      <div class="analytics-sub">
+        <span class="analytics-sub-live">
+          <span class="analytics-sub-dot"></span> Live
+        </span>
+        Auto-refreshes every 30s ·
+        <span id="last-updated">Updated just now</span>
+      </div>
+    </div>
+    <div style="padding-bottom:10px; position:relative">
+      <button type="button" onclick="toggleExportMenu(event)" class="btn btn-ghost" style="border:1.5px solid var(--kaam-line-strong); padding:10px 28px; font-size:12px; font-weight:800; background:var(--kaam-milk); border-radius:100px; display:flex; align-items:center">
+        <i class="ri-download-line" style="margin-right:10px; font-size:14px"></i> Export Data
+        <i class="ri-arrow-down-s-line" style="margin-left:8px; font-size:14px; opacity:0.6"></i>
+      </button>
+      <div id="export-menu" style="display:none; position:absolute; top:100%; right:0; width:190px; background:var(--kaam-milk); border:1.5px solid var(--kaam-line-strong); border-radius:var(--radius-lg); margin-top:12px; z-index:100; box-shadow:var(--shadow-xl); overflow:hidden; opacity:0;">
+        <a href="{% url 'export_orders' %}?format=csv" style="display:flex; align-items:center; gap:12px; padding:15px 22px; font-size:13px; font-weight:700; color:var(--kaam-ink); text-decoration:none; transition:all 0.2s ease" onmouseover="this.style.background='var(--kaam-stone-pale)'; this.style.paddingLeft='26px'" onmouseout="this.style.background='none'; this.style.paddingLeft='22px'">
+          <i class="ri-file-excel-2-line" style="color:var(--kaam-success); font-size:16px"></i> Export as CSV
+        </a>
+        <a href="{% url 'export_orders' %}?format=json" style="display:flex; align-items:center; gap:12px; padding:15px 22px; font-size:13px; font-weight:700; color:var(--kaam-ink); text-decoration:none; border-top:1px solid var(--kaam-line); transition:all 0.2s ease" onmouseover="this.style.background='var(--kaam-stone-pale)'; this.style.paddingLeft='26px'" onmouseout="this.style.background='none'; this.style.paddingLeft='22px'">
+          <i class="ri-braces-line" style="color:var(--kaam-saffron); font-size:16px"></i> Export as JSON
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Period Selector -->
+  <div class="period-selector">
+    <button class="period-btn {% if period_days == 7 %}active{% endif %}" data-period="7">Last 7 days</button>
+    <button class="period-btn {% if period_days == 15 %}active{% endif %}" data-period="15">Last 15 days</button>
+    <button class="period-btn {% if period_days == 30 %}active{% endif %}" data-period="30">Last 30 days</button>
+    <button class="period-btn {% if period_days == 90 %}active{% endif %}" data-period="90">Last 90 days</button>
+    <button class="period-btn {% if period_days == 180 %}active{% endif %}" data-period="180">6 Months</button>
+  </div>
+
+  <!-- SECTION 2: Key Metrics -->
+  <div class="analytics-section">
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-icon">💰</div>
+        <div class="metric-label">Money Earned</div>
+        <div class="metric-value">₹{{ total_revenue|floatformat:0 }}</div>
+        <div class="metric-change {% if revenue_change >= 0 %}up{% else %}down{% endif %}">
+          {% if revenue_change >= 0 %}↗{% else %}↘{% endif %}
+          {{ revenue_change|floatformat:1 }}%
+          <span class="metric-change-sub">vs prev period</span>
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">📦</div>
+        <div class="metric-label">Total Orders</div>
+        <div class="metric-value">{{ total_orders }}</div>
+        <div class="metric-change {% if orders_change >= 0 %}up{% else %}down{% endif %}">
+          {% if orders_change >= 0 %}↗{% else %}↘{% endif %}
+          {{ orders_change|floatformat:1 }}%
+          <span class="metric-change-sub">vs prev period</span>
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">⭐</div>
+        <div class="metric-label">Avg Rating</div>
+        <div class="metric-value">{% if avg_feedback %}{{ avg_feedback|floatformat:1 }}/5{% else %}—{% endif %}</div>
+        <div class="metric-change" style="color:var(--kaam-stone-dark)">from buyer reviews</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">🛍️</div>
+        <div class="metric-label">Items Sold</div>
+        <div class="metric-value">{{ items_sold }}</div>
+        <div class="metric-change" style="color:var(--kaam-stone-dark)">total units moved</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: Delivery Progress -->
+  <div class="analytics-section">
+    <div class="analytics-section-header">
+      <div class="analytics-section-title">Order Delivery Progress</div>
+    </div>
+    <div class="delivery-strip">
+      <div class="dispatch-chip {% if packed_count > 0 %}active{% endif %}">
+        <span class="chip-count" id="metric-packed">{{ packed_count }}</span> Packed
+      </div>
+      <div class="dispatch-chip {% if shipped_count > 0 %}active{% endif %}">
+        <span class="chip-count" id="metric-shipped">{{ shipped_count }}</span> Shipped
+      </div>
+      <div class="dispatch-chip {% if out_count > 0 %}active{% endif %}">
+        <span class="chip-count" id="metric-out">{{ out_count }}</span> Out for Delivery
+      </div>
+      <div class="dispatch-chip {% if delivered_count > 0 %}active{% endif %}">
+        <span class="chip-count" id="metric-delivered">{{ delivered_count }}</span> Delivered
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: Category Performance -->
+  <div class="analytics-section">
+    <div class="analytics-section-header">
+      <div class="analytics-section-title">What's Selling Best</div>
+      <div class="analytics-section-sub">Use this to decide what to restock</div>
+    </div>
+    <div class="category-layout">
+      <!-- Category Bars -->
+      <div class="chart-card">
+        <div class="chart-card-title">Sales by Category / Subcategory</div>
+        <div class="cat-bar-list" id="cat-bar-list"></div>
+      </div>
+
+      <!-- Insight Card -->
+      <div>
+        {% if top_categories %}
+        <div class="insight-card">
+          <div class="insight-card-title">📈 Restock Tip</div>
+          <div class="insight-card-body" id="insight-text">
+            <strong>{{ top_categories.0.category }}{% if top_categories.0.subcategory %}/{{ top_categories.0.subcategory }}{% endif %}</strong>
+            is your #1 seller. You sold <strong>{{ top_categories.0.count }}</strong> units this period.
+            Consider adding more colour/size variants to capture demand.
+          </div>
+        </div>
+        {% endif %}
+
+        {% if products_never_ordered %}
+        <div class="insight-card alert-card">
+          <div class="insight-card-title">⚠️ Dead Stock Alert</div>
+          <div class="insight-card-body">
+            {{ products_never_ordered.count }} product{{ products_never_ordered.count|pluralize }}
+            haven't received any orders this period.
+            Consider reviewing pricing or visibility.
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: Sales This Period -->
+  <div class="analytics-section">
+    <div class="analytics-section-header">
+      <div class="analytics-section-title">Sales Data Trends</div>
+    </div>
+    <div class="weekly-charts">
+      <div class="weekly-chart-card">
+        <div class="weekly-chart-title">Orders over period</div>
+        <div class="weekly-chart-delta {% if orders_change >= 0 %}up{% else %}down{% endif %}">
+          {% if orders_change >= 0 %}▲{% else %}▼{% endif %}
+          {{ orders_change|floatformat:0 }}% vs previous period
+        </div>
+        <div class="chart-canvas-wrap">
+          <canvas id="weeklyOrdersChart"></canvas>
+        </div>
+      </div>
+      <div class="weekly-chart-card">
+        <div class="weekly-chart-title">Revenue over period</div>
+        <div class="weekly-chart-delta {% if revenue_change >= 0 %}up{% else %}down{% endif %}">
+          {% if revenue_change >= 0 %}▲{% else %}▼{% endif %}
+          {{ revenue_change|floatformat:0 }}% vs previous period
+        </div>
+        <div class="chart-canvas-wrap">
+          <canvas id="weeklyRevenueChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 6: Best Selling Products -->
+  {% if best_products %}
+  <div class="analytics-section">
+    <div class="analytics-section-header">
+      <div class="analytics-section-title">Top Products This Period</div>
+    </div>
+    <div class="best-products-list">
+      {% for product in best_products %}
+      <div class="best-product-row">
+        <div class="best-product-rank">#{{ forloop.counter }}</div>
+        {% if product.image_url %}
+        <img src="{{ product.image_url }}" alt="{{ product.title }}" class="best-product-img">
+        {% else %}
+        <div class="best-product-img" style="display:flex;align-items:center;justify-content:center;font-size:20px">📦</div>
+        {% endif %}
+        <div class="best-product-info">
+          <div class="best-product-title">{{ product.title }}</div>
+          <div class="best-product-cat">{{ product.category }}{% if product.subcategory %} / {{ product.subcategory }}{% endif %}</div>
+        </div>
+        <div class="best-product-stats">
+          <div class="best-product-orders">{{ product.count }} orders</div>
+          <div class="best-product-revenue">₹{{ product.revenue|floatformat:0 }} revenue</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- SECTION 7: Business Summary -->
+  <div class="analytics-section">
+    <div class="analytics-section-header">
+      <div class="analytics-section-title">Quick Business Summary</div>
+    </div>
+    <div class="biz-summary-grid">
+      <div class="biz-card">
+        <div class="biz-card-label">Average Order Size</div>
+        <div class="biz-card-value">₹{{ avg_order_value|floatformat:0 }}</div>
+        <div class="biz-card-sub">per order this period</div>
+      </div>
+      <div class="biz-card">
+        <div class="biz-card-label">Biggest Sale</div>
+        <div class="biz-card-value">₹{{ biggest_sale|floatformat:0 }}</div>
+        <div class="biz-card-sub">{{ biggest_sale_date }}</div>
+      </div>
+      <div class="biz-card">
+        <div class="biz-card-label">Daily Earnings (avg)</div>
+        <div class="biz-card-value">₹{{ daily_earnings|floatformat:0 }}</div>
+        <div class="biz-card-sub">since store launch</div>
+      </div>
+      <div class="biz-card">
+        <div class="biz-card-label">Not Received</div>
+        <div class="biz-card-value">{{ not_received_count }}</div>
+        <div class="biz-card-sub">delivery issues reported</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 8: Payments -->
+  <div class="analytics-section">
+    <div class="analytics-section-header">
+      <div class="analytics-section-title">Payments Collected So Far</div>
+    </div>
+    <div class="payments-grid">
+      <div class="payment-data-card">
+        <div class="biz-card-label">Money Received Online</div>
+        <div class="payment-stat">₹{{ online_paid_amount|floatformat:0 }}</div>
+        <div class="payment-sub">{{ online_paid_count }} transactions</div>
+        {% if online_paid_amount or cod_pending_amount %}
+        <div class="payment-bar-wrap">
+          <div class="payment-bar-label">Online / Total</div>
+          <div class="payment-bar-track">
+            <div class="payment-bar-fill"
+                 data-pct="{% if online_paid_amount %}{{ online_paid_amount|floatformat:0 }}{% else %}0{% endif %}"
+                 style="width:0%"></div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+      <div class="payment-data-card">
+        <div class="biz-card-label">COD / Pending</div>
+        <div class="payment-stat">₹{{ cod_pending_amount|floatformat:0 }}</div>
+        <div class="payment-sub">{{ cod_pending_count }} orders</div>
+        <div class="payment-bar-wrap">
+          <div class="payment-bar-label">COD orders</div>
+          <div class="payment-bar-track">
+            <div class="payment-bar-fill cod"
+                 data-pct="{% if cod_pending_count %}{{ cod_pending_count }}{% else %}0{% endif %}"
+                 style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 9: Buyer Feedback -->
+  <div class="analytics-section">
+    <div class="analytics-section-header">
+      <div class="analytics-section-title">What Buyers Are Saying</div>
+    </div>
+    <div class="grid-2">
+      <!-- Star breakdown -->
+      <div class="chart-card">
+        <div class="chart-card-title">Rating Distribution</div>
+        <div class="star-breakdown-list">
+          {% for star, count in star_breakdown.items %}
+          <div class="star-row">
+            <span class="star-row-label">{{ star }}★</span>
+            <div class="star-row-track">
+              <div class="star-row-fill"
+                   data-pct="{% if count and total_orders %}{{ count|floatformat:0 }}{% else %}0{% endif %}"
+                   style="width:0%"></div>
+            </div>
+            <span class="star-row-count">{{ count }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% if avg_feedback %}
+        <div style="margin-top:14px;font-size:20px;font-family:var(--font-display);font-weight:700;color:var(--kaam-ink)">
+          {{ avg_feedback|floatformat:1 }}<span style="font-size:14px;color:var(--kaam-stone-dark);font-family:var(--font-body);font-weight:400"> / 5 average</span>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Recent feedback cards -->
+      <div>
+        {% if recent_feedbacks %}
+        <div style="display:flex;flex-direction:column;gap:10px">
+          {% for fb in recent_feedbacks %}
+          <div class="feedback-card">
+            <div class="feedback-stars-row">
+              {% for i in "12345" %}
+              <span class="star-static {% if forloop.counter <= fb.feedback_stars %}filled{% else %}empty{% endif %}">★</span>
+              {% endfor %}
+            </div>
+            <div class="feedback-buyer">{{ fb.buyer_name }}</div>
+            {% if fb.feedback_text %}
+            <div class="feedback-text">"{{ fb.feedback_text|truncatechars:100 }}"</div>
+            {% endif %}
+            <div class="feedback-date">{{ fb.created_at|date:"d M Y" }}</div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state" style="padding:32px 16px">
+          <div class="empty-state-icon">⭐</div>
+          <div class="empty-state-title">No feedback yet</div>
+          <div class="empty-state-body">Delivered orders will show buyer feedback here.</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Delivery Issues -->
+  {% if not_received_orders %}
+  <div class="analytics-section">
+    <div class="analytics-section-header">
+      <div class="analytics-section-title">Delivery Issues</div>
+      <div class="analytics-section-sub">Orders marked as not received by buyers</div>
+    </div>
+    <div class="not-received-list">
+      {% for order in not_received_orders %}
+      <div class="not-received-row">
+        <div>
+          <div class="not-received-order">{{ order.order_id }}</div>
+          <div class="not-received-buyer">{{ order.buyer_name }}</div>
+          {% if order.not_received_reason %}
+          <div style="font-size:12px;color:var(--kaam-stone-dark);margin-top:3px">{{ order.not_received_reason|truncatechars:60 }}</div>
+          {% endif %}
+        </div>
+        <a href="https://wa.me/{{ order.buyer_whatsapp|cut:' ' }}" target="_blank" class="not-received-contact">
+          Contact on WhatsApp →
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  <!-- SECTION 10: Reports & Export -->
+  <div class="analytics-section">
+    <div class="analytics-section-header">
+      <div class="analytics-section-title">Reports & Export</div>
+      <div class="analytics-section-sub">Download your data for offline usage or backup</div>
+    </div>
+    
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:20px; margin-top:16px;">
+      <div style="background:var(--kaam-paper); padding:24px; border-radius:var(--radius-md); border:1px solid var(--kaam-line);">
+        <div style="font-size:11px; font-weight:800; text-transform:uppercase; color:var(--kaam-stone-dark); margin-bottom:8px">Full Orders History</div>
+        <p style="font-size:13px; margin-bottom:20px; opacity:0.8; color:var(--kaam-soot)">Contains all order details, buyer contact info, and payment statuses.</p>
+        <div style="display:flex; gap:12px">
+          <a href="{% url 'export_orders' %}?format=csv" class="btn btn-outline-saffron btn-sm" style="flex:1; justify-content:center;">Excel (.csv)</a>
+          <a href="{% url 'export_orders' %}?format=json" class="btn btn-ghost btn-sm" style="flex:1; justify-content:center;">JSON</a>
+        </div>
+      </div>
+      
+      <div style="background:var(--kaam-paper); padding:24px; border-radius:var(--radius-md); border:1px solid var(--kaam-line);">
+        <div style="font-size:11px; font-weight:800; text-transform:uppercase; color:var(--kaam-stone-dark); margin-bottom:8px">Performance Analytics</div>
+        <p style="font-size:13px; margin-bottom:20px; opacity:0.8; color:var(--kaam-soot)">Download calculated revenue totals and category-wise performance data.</p>
+        <div style="display:flex; gap:12px">
+          <a href="{% url 'export_analytics' %}?format=csv" class="btn btn-outline-saffron btn-sm" style="flex:1; justify-content:center;">Excel (.csv)</a>
+          <a href="{% url 'export_analytics' %}?format=json" class="btn btn-ghost btn-sm" style="flex:1; justify-content:center;">JSON</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block seller_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+window.DAILY_ORDERS = {{ daily_orders|safe }};
+window.DAILY_REVENUE = {{ daily_revenue|safe }};
+window.TOP_CATEGORIES = {{ top_categories|safe }};
+</script>
+  <script>
+  function toggleExportMenu(e) {
+    if (e) e.stopPropagation();
+    const menu = document.getElementById('export-menu');
+    const isHidden = menu.style.display === 'none' || menu.style.display === '';
+    
+    if (isHidden) {
+      menu.style.display = 'block';
+      menu.style.opacity = '0';
+      menu.style.transform = 'translateY(10px)';
+      setTimeout(() => {
+        menu.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+        menu.style.opacity = '1';
+        menu.style.transform = 'translateY(0)';
+      }, 10);
+    } else {
+      menu.style.display = 'none';
+    }
+  }
+
+  // Global click listener for closing dropdown
+  document.addEventListener('click', function(e) {
+    const menu = document.getElementById('export-menu');
+    if (!menu) return;
+    const btn = menu.previousElementSibling;
+    if (menu.style.display === 'block' && !menu.contains(e.target) && !btn.contains(e.target)) {
+      menu.style.display = 'none';
+    }
+  });
+  </script>
+  <script src="{% static 'js/analytics.js' %}?v={% now 'U' %}"></script>
+{% endblock %}

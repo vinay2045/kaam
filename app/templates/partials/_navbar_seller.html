@@ -1,0 +1,115 @@
+{% load static %}
+{% load kaam_filters %}
+<nav class="seller-nav" role="navigation" aria-label="Seller dashboard navigation">
+  <div class="seller-nav-inner">
+    <!-- Brand -->
+    <div class="seller-nav-brand">
+      <a href="{% url 'dashboard' %}" class="kaam-wordmark">
+        <div class="kaam-wordmark-stamp">
+          <span class="kaam-wordmark-text">kaam</span>
+        </div>
+      </a>
+      <div class="seller-nav-brand-sep"></div>
+      <span class="seller-biz-name">{{ seller.business_name }}</span>
+      {% if seller.is_active and seller.subscription_active %}
+      <span class="seller-status-pill">
+        <span class="seller-status-dot"></span>
+        active
+      </span>
+      {% endif %}
+    </div>
+
+    <!-- Center links -->
+    <div class="seller-nav-links">
+      <a href="{% url 'dashboard' %}" class="seller-nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </a>
+      <a href="{% url 'product_list' %}" class="seller-nav-link {% if request.resolver_match.url_name == 'product_list' or request.resolver_match.url_name == 'product_add' or request.resolver_match.url_name == 'product_edit' %}active{% endif %}">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 3h18l-2 13H5L3 3z"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg>
+        Products
+      </a>
+      <a href="{% url 'analytics' %}" class="seller-nav-link {% if request.resolver_match.url_name == 'analytics' %}active{% endif %}">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 20V12M9 20V8M14 20V14M19 20V4"/></svg>
+        Analytics
+      </a>
+      <a href="{% url 'feedbacks' %}" class="seller-nav-link {% if request.resolver_match.url_name == 'feedbacks' %}active{% endif %}">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Feedbacks
+      </a>
+      <a href="{% url 'settings' %}" class="seller-nav-link {% if request.resolver_match.url_name == 'settings' %}active{% endif %}">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Settings
+      </a>
+    </div>
+
+    <!-- Right -->
+    <div class="seller-nav-right" style="position:relative;display:flex;align-items:center;">
+      <!-- Theme Toggle -->
+      <button class="theme-toggle" type="button" title="Toggle theme" aria-label="Toggle theme" onclick="toggleTheme()">
+         <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="1em" height="1em" fill="currentColor" class="theme-toggle__expand" viewBox="0 0 32 32"><clipPath id="theme-toggle__expand__cutout"><path d="M0-11h25a1 1 0 0017 13v30H0Z" /></clipPath><g clip-path="url(#theme-toggle__expand__cutout)"><circle cx="16" cy="16" r="8.4" /><path d="M18.3 3.2c0 1.3-1 2.3-2.3 2.3s-2.3-1-2.3-2.3S14.7.9 16 .9s2.3 1 2.3 2.3zm-4.6 25.6c0-1.3 1-2.3 2.3-2.3s2.3 1 2.3 2.3-1 2.3-2.3 2.3-2.3-1-2.3-2.3zm15.1-10.5c-1.3 0-2.3-1-2.3-2.3s1-2.3 2.3-2.3 2.3 1 2.3 2.3-1 2.3-2.3 2.3zM3.2 13.7c1.3 0 2.3 1 2.3 2.3s-1 2.3-2.3 2.3S.9 17.3.9 16s1-2.3 2.3-2.3zm5.8-7C9 7.9 7.9 9 6.7 9S4.4 8 4.4 6.7s1-2.3 2.3-2.3S9 5.4 9 6.7zm16.3 21c-1.3 0-2.3-1-2.3-2.3s1-2.3 2.3-2.3 2.3 1 2.3 2.3-1 2.3-2.3 2.3zm2.4-21c0 1.3-1 2.3-2.3 2.3S23 7.9 23 6.7s1-2.3 2.3-2.3 2.4 1 2.4 2.3zM6.7 23C8 23 9 24 9 25.3s-1 2.3-2.3 2.3-2.3-1-2.3-2.3 1-2.3 2.3-2.3z" /></g></svg>
+      </button>
+
+      <!-- Notification bell -->
+      <button class="notif-bell" id="notif-bell-btn" onclick="toggleNotifDropdown()" aria-label="Notifications">
+        🔔
+        {% if unread_count > 0 %}
+        <span class="notif-count" id="notif-badge">{{ unread_count }}</span>
+        {% endif %}
+      </button>
+
+      <!-- Notification dropdown -->
+      <div class="notif-dropdown" id="notif-dropdown">
+        <div class="notif-dropdown-header">
+          <span>Notifications</span>
+          <button onclick="toggleNotifDropdown()" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--kaam-stone-dark)">Close</button>
+        </div>
+        {% if notifications %}
+          {% for n in notifications %}
+          <div class="notif-item {% if not n.is_read %}unread{% endif %}">
+            {{ n.message }}
+            <div class="notif-item-time">{{ n.created_at|timesince_short }}</div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="notif-empty">No new notifications</div>
+        {% endif %}
+      </div>
+
+      <span class="seller-date">{{ "now"|date:"D, d M" }}</span>
+
+      <div class="seller-avatar-wrap" style="position:relative">
+        <div class="seller-avatar" title="{{ seller.business_name }}" onclick="toggleProfileMenu()" style="cursor:pointer">
+          {{ seller.business_name|first|upper }}
+        </div>
+        <div id="profile-menu" style="display:none;position:absolute;right:0;top:calc(100% + 10px);background:var(--kaam-milk);border:1px solid var(--kaam-line-strong);border-radius:12px;min-width:180px;box-shadow:var(--shadow-lift);overflow:hidden;z-index:200">
+          <div style="padding:14px 16px;border-bottom:1px solid var(--kaam-line)">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--kaam-stone-dark);margin-bottom:2px">Signed in as</div>
+            <div style="font-size:14px;font-weight:600;color:var(--kaam-ink)">{{ seller.business_name }}</div>
+          </div>
+          <a href="{% url 'settings' %}" style="display:flex;align-items:center;gap:10px;padding:12px 16px;color:var(--kaam-soot);font-size:14px;font-weight:500;transition:background 0.15s" onmouseover="this.style.background='var(--kaam-paper)'" onmouseout="this.style.background='transparent'">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+            Settings
+          </a>
+          <a href="{% url 'logout' %}" style="display:flex;align-items:center;gap:10px;padding:12px 16px;color:var(--kaam-danger);font-size:14px;font-weight:500;transition:background 0.15s;border-top:1px solid var(--kaam-line)" onmouseover="this.style.background='var(--kaam-danger-soft)'" onmouseout="this.style.background='transparent'">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+            Log out
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+<script>
+function toggleProfileMenu() {
+  var m = document.getElementById('profile-menu');
+  m.style.display = m.style.display === 'none' ? 'block' : 'none';
+}
+document.addEventListener('click', function(e) {
+  var wrap = document.querySelector('.seller-avatar-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    var m = document.getElementById('profile-menu');
+    if (m) m.style.display = 'none';
+  }
+});
+</script>

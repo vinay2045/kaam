@@ -1,0 +1,218 @@
+{% extends "base/base_seller.html" %}
+{% load static %}
+{% load kaam_filters %}
+
+{% block meta %}<title>Products — Kaam</title>{% endblock %}
+{% block mob_prod_active %}active{% endblock %}
+
+{% block dashboard_content %}
+<div class="dashboard-main">
+
+  {% if messages %}
+  <div class="messages-list">
+    {% for message in messages %}
+    <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="products-header">
+    <div>
+      <div class="eyebrow">Inventory</div>
+      <h1 style="font-size:26px">Your Products</h1>
+    </div>
+    <a href="{% url 'product_add' %}" class="btn btn-primary">+ Add New Product</a>
+  </div>
+
+  <!-- Real-time Search -->
+  <div class="products-search-bar" style="margin-bottom:20px">
+    <div class="input-prefix-wrap" style="max-width:380px">
+      <i class="ri-search-line input-prefix"></i>
+      <input type="text" id="product-search" class="input-field"
+             placeholder="Search by title, category, product ID…"
+             oninput="filterProducts(this.value)" autocomplete="off">
+    </div>
+  </div>
+
+  <!-- Filter Chips & Select All -->
+  <div class="products-filter-row">
+    <div class="filter-chips">
+      <a href="{% url 'product_list' %}{% if q %}?q={{ q }}{% endif %}"
+         class="filter-chip {% if not category %}active{% endif %}">All</a>
+      {% for cat in categories %}
+      <a href="?category={{ cat }}{% if q %}&q={{ q }}{% endif %}"
+         class="filter-chip {% if category == cat %}active{% endif %}">{{ cat }}</a>
+      {% endfor %}
+    </div>
+    {% if products %}
+    <label class="select-all-label">
+      <input type="checkbox" id="select-all-cb" onchange="toggleSelectAll(this)">
+      <span class="select-all-text">Select All</span>
+    </label>
+    {% endif %}
+  </div>
+
+  <!-- Bulk Action Bar -->
+  <div class="bulk-actions-bar" id="bulk-actions-bar">
+    <div class="bulk-actions-inner">
+      <div class="bulk-actions-count">
+        <span id="bulk-count">0</span> selected
+      </div>
+      <div class="bulk-actions-btns">
+        <button class="btn btn-ghost btn-sm" onclick="clearBulkSelection()">Cancel</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteSelectedProducts()">🗑 Delete</button>
+      </div>
+    </div>
+  </div>
+
+
+  {% if not products %}
+  <div class="empty-state">
+    <div class="empty-state-icon">📦</div>
+    <div class="empty-state-title">
+      {% if q %}No products matching "{{ q }}"{% else %}No products yet{% endif %}
+    </div>
+    <div class="empty-state-body">
+      {% if q %}Try a different search term or clear the filter.
+      {% else %}Add your first product to start selling on Kaam.{% endif %}
+    </div>
+    {% if not q %}
+    <a href="{% url 'product_add' %}" class="btn btn-primary">Add First Product</a>
+    {% endif %}
+  </div>
+  {% else %}
+
+  <div class="product-grid" id="product-grid">
+    {% for product in products %}
+    <div class="product-card" id="product-card-{{ product.pk }}"
+         data-title="{{ product.title|lower }}"
+         data-cat="{{ product.category|lower }} {{ product.subcategory|lower }}"
+         data-pid="{{ product.product_id }}">
+      <div class="product-checkbox-wrapper">
+        <input type="checkbox" class="product-checkbox" value="{{ product.pk }}" onchange="handleProductCheck()">
+      </div>
+      {% if product.image %}
+      <img src="{{ product.image.url }}" alt="{{ product.title }}" class="product-card-img">
+      {% else %}
+      <div class="product-card-img-placeholder">📷</div>
+      {% endif %}
+      <div class="product-card-body">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <span style="font-family:monospace;font-size:11px;font-weight:700;background:var(--kaam-saffron-pale,#fff8e1);color:var(--kaam-soot);padding:2px 8px;border-radius:99px;letter-spacing:0.04em;border:1px solid var(--kaam-saffron,#f5a623);">{{ product.product_id }}</span>
+        </div>
+        <div class="product-card-cat">{{ product.category }} · {{ product.subcategory }}</div>
+        <div class="product-card-title">{{ product.title }}</div>
+        <div class="product-card-price">₹{{ product.price }}</div>
+        {% if product.size_color_raw %}
+        <div class="product-card-variants">{{ product.size_color_raw|truncatechars:50 }}</div>
+        {% endif %}
+        <div class="product-card-actions">
+          <a href="{% url 'product_edit' product.pk %}" class="btn btn-ghost btn-sm">✎ Edit</a>
+          <button class="btn btn-danger btn-sm"
+                  onclick="deleteProduct({{ product.pk }}, '{{ product.title|escapejs }}')">🗑 Delete</button>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  {% if has_prev or has_next %}
+  <div style="display:flex;gap:10px;justify-content:center;margin-top:24px">
+    {% if has_prev %}
+    <a href="?page={{ page|add:'-1' }}{% if q %}&q={{ q }}{% endif %}{% if category %}&category={{ category }}{% endif %}"
+       class="btn btn-ghost btn-sm">← Previous</a>
+    {% endif %}
+    <span style="display:flex;align-items:center;font-size:13px;color:var(--kaam-stone-dark)">
+      Page {{ page }} · {{ total }} products total
+    </span>
+    {% if has_next %}
+    <a href="?page={{ page|add:'1' }}{% if q %}&q={{ q }}{% endif %}{% if category %}&category={{ category }}{% endif %}"
+       class="btn btn-ghost btn-sm">Next →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+  {% endif %}
+
+</div>
+
+<script>
+function filterProducts(query) {
+  const q = query.trim().toLowerCase();
+  const cards = document.querySelectorAll('#product-grid .product-card');
+  let visible = 0;
+  cards.forEach(card => {
+    const title = card.dataset.title || '';
+    const cat = card.dataset.cat || '';
+    const pid = card.dataset.pid || '';
+    const match = !q || title.includes(q) || cat.includes(q) || pid.includes(q);
+    card.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+}
+
+function handleProductCheck() {
+  const checkboxes = document.querySelectorAll('.product-checkbox');
+  const checked = Array.from(checkboxes).filter(cb => cb.checked);
+  const selectAll = document.getElementById('select-all-cb');
+  const bulkBar = document.getElementById('bulk-actions-bar');
+  const bulkCount = document.getElementById('bulk-count');
+  
+  if (selectAll) {
+    selectAll.checked = checkboxes.length > 0 && checked.length === checkboxes.length;
+  }
+  
+  if (checked.length > 0) {
+    bulkBar.style.display = 'block';
+    bulkCount.textContent = checked.length;
+  } else {
+    bulkBar.style.display = 'none';
+  }
+}
+
+function toggleSelectAll(selectAllEl) {
+  document.querySelectorAll('.product-checkbox').forEach(cb => {
+    cb.checked = selectAllEl.checked;
+  });
+  handleProductCheck();
+}
+
+function clearBulkSelection() {
+  const selectAll = document.getElementById('select-all-cb');
+  if (selectAll) selectAll.checked = false;
+  document.querySelectorAll('.product-checkbox').forEach(cb => cb.checked = false);
+  handleProductCheck();
+}
+
+function deleteSelectedProducts() {
+  const checked = Array.from(document.querySelectorAll('.product-checkbox:checked'));
+  if (checked.length === 0) return;
+  
+  if (!confirm(`Are you sure you want to delete ${checked.length} products? This cannot be undone.`)) {
+    return;
+  }
+
+  const ids = checked.map(cb => parseInt(cb.value));
+
+  fetch("{% url 'bulk_delete_products' %}", {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCookie('csrftoken'),
+      'X-Requested-With': 'XMLHttpRequest'
+    },
+    body: JSON.stringify({ product_ids: ids })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      // Opt: showToast(`Deleted ${data.count} items.`, 'success');
+      window.location.reload();
+    } else {
+      alert(data.error || "Failed to bulk delete.");
+    }
+  })
+  .catch(err => alert("Network error."));
+}
+</script>
+{% endblock %}

@@ -1,0 +1,280 @@
+/* ═══════════════════════════════════════════════════════
+   KAAM — Base CSS
+   Design System: Bazaar Editorial
+   Fonts: Fraunces + Instrument Sans + IBM Plex Mono
+═══════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,800&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+/* ─── DESIGN TOKENS ─── */
+:root {
+  --kaam-saffron: #E0A11B;
+  --kaam-saffron-deep: #B77C12;
+  --kaam-saffron-soft: #F6E6B8;
+  --kaam-saffron-pale: #FDF6E3;
+  --kaam-ink: #16110F;
+  --kaam-soot: #2A211C;
+  --kaam-clay: #B85C38;
+  --kaam-leaf: #5C6F42;
+  --kaam-paper: #F6F0E6;
+  --kaam-paper-dark: #EDE5D6;
+  --kaam-milk: #FFFDF8;
+  --kaam-stone: #D7C9B6;
+  --kaam-stone-dark: #7A6857;
+  --kaam-line: rgba(22, 17, 15, 0.12);
+  --kaam-line-strong: rgba(22, 17, 15, 0.22);
+
+  --kaam-success: #2E6A4F;
+  --kaam-success-soft: #DCEBDD;
+  --kaam-danger: #A1462F;
+  --kaam-danger-soft: #F3DDD6;
+  --kaam-info: #355C7D;
+  --kaam-info-soft: #DDE6EE;
+  --kaam-warning: #7A5000;
+  --kaam-warning-soft: #FDF0CC;
+
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'Instrument Sans', 'Helvetica Neue', sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 28px;
+
+  --shadow-card: 0 2px 8px rgba(22, 17, 15, 0.06), 0 1px 2px rgba(22, 17, 15, 0.04);
+  --shadow-lift: 0 6px 24px rgba(22, 17, 15, 0.10);
+  --shadow-press: 0 4px 0 rgba(22, 17, 15, 0.12);
+  --shadow-line: inset 0 0 0 1px var(--kaam-line);
+
+  --transition-fast: 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --transition-slow: 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  --max-w: 1320px;
+  --content-w: 1080px;
+  --gap: 24px;
+}
+
+/* ─── DARK THEME ─── */
+[data-theme="dark"] {
+  --kaam-saffron: #ECAE2A;
+  --kaam-saffron-deep: #D09312;
+  --kaam-saffron-soft: rgba(236, 174, 42, 0.15);
+  --kaam-saffron-pale: rgba(236, 174, 42, 0.06);
+  --kaam-ink: #F8F5F2;
+  --kaam-soot: #D4CFC9;
+  --kaam-clay: #DE6D43;
+  --kaam-leaf: #7A905A;
+  --kaam-paper: #1E1A18;
+  --kaam-paper-dark: #27221F;
+  --kaam-milk: #14110F;
+  --kaam-stone: #463F3A;
+  --kaam-stone-dark: #A39B94;
+  --kaam-line: rgba(255, 255, 255, 0.1);
+  --kaam-line-strong: rgba(255, 255, 255, 0.2);
+
+  --kaam-success: #6DBE92;
+  --kaam-success-soft: rgba(109, 190, 146, 0.15);
+  --kaam-danger: #E26D50;
+  --kaam-danger-soft: rgba(226, 109, 80, 0.15);
+  --kaam-info: #79A3CE;
+  --kaam-info-soft: rgba(121, 163, 206, 0.15);
+  --kaam-warning: #F5B84A;
+  --kaam-warning-soft: rgba(245, 184, 74, 0.15);
+
+  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.2);
+  --shadow-lift: 0 8px 30px rgba(0, 0, 0, 0.5);
+  --shadow-press: 0 4px 0 rgba(0, 0, 0, 0.5);
+  --shadow-line: inset 0 0 0 1px var(--kaam-line);
+}
+
+
+/* ─── RESET ─── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--kaam-ink);
+  background: var(--kaam-milk);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+img, video, svg {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button, input, textarea, select {
+  font-family: var(--font-body);
+  font-size: inherit;
+}
+
+ul, ol { list-style: none; }
+
+/* ─── TYPOGRAPHY ─── */
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--kaam-ink);
+  letter-spacing: -0.02em;
+}
+
+h1 { font-size: clamp(30px, 5vw, 52px); }
+h2 { font-size: clamp(22px, 3vw, 30px); font-weight: 600; }
+h3 { font-size: clamp(18px, 2.5vw, 22px); font-weight: 600; }
+
+.eyebrow {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--kaam-stone-dark);
+  margin-bottom: 8px;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+/* ─── LAYOUT UTILITIES ─── */
+.container {
+  width: 100%;
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 0 var(--gap);
+}
+
+.content-narrow {
+  max-width: var(--content-w);
+  margin: 0 auto;
+}
+
+/* ─── KAAM WORDMARK ─── */
+.kaam-wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kaam-wordmark-stamp {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.kaam-wordmark-text {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: -0.04em;
+  color: var(--kaam-ink);
+  line-height: 1;
+  background: var(--kaam-saffron);
+  padding: 3px 8px 4px;
+  border-radius: var(--radius-xs);
+  border: 1.5px solid rgba(22,17,15,0.15);
+}
+
+.kaam-wordmark-sub {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--kaam-stone-dark);
+  letter-spacing: 0.02em;
+  margin-top: 3px;
+  padding-left: 1px;
+}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--kaam-paper); }
+::-webkit-scrollbar-thumb { background: var(--kaam-stone); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--kaam-stone-dark); }
+
+/* ─── SELECTION ─── */
+::selection {
+  background: var(--kaam-saffron-soft);
+  color: var(--kaam-ink);
+}
+
+/* ─── FOCUS VISIBLE ─── */
+:focus-visible {
+  outline: 2px solid var(--kaam-saffron);
+  outline-offset: 2px;
+}
+
+/* ─── VISUALLY HIDDEN ─── */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0);
+  border: 0;
+}
+
+/* ─── AUTOFILL ─── */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px var(--kaam-milk) inset !important;
+  -webkit-text-fill-color: var(--kaam-ink) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* ─── THEME TOGGLE OVERRIDE ─── */
+/* Fixes browser-specific SVG antialiasing dots remaining during the moon state */
+.theme-toggle--toggled svg.theme-toggle__expand g path {
+  opacity: 0 !important;
+}
+/* ─── GLOBAL NAVIGATION LOADER (YouTube Style) ─── */
+.kaam-loader-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0%;
+  height: 3px;
+  background: var(--kaam-saffron);
+  z-index: 10000;
+  transition: width 0.4s ease-out, opacity 0.3s;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.kaam-loader-bar.loading {
+  opacity: 1;
+  width: 90%;
+  animation: kaam-pulse 2s ease-in-out infinite;
+}
+
+@keyframes kaam-pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+[data-theme="dark"] .kaam-loader-bar {
+  box-shadow: 0 0 10px var(--kaam-saffron);
+}

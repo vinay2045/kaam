@@ -1,0 +1,171 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block meta %}
+<title>Seller Login — Kaam</title>
+<meta name="description" content="Login to the Kaam seller dashboard.">
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.login-page {
+  min-height: 100vh;
+  background: var(--kaam-paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--gap);
+}
+
+.login-brand {
+  text-align: center;
+  margin-bottom: 28px;
+}
+.login-brand-sub {
+  font-size: 13px;
+  color: var(--kaam-stone-dark);
+  margin-top: 5px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--kaam-milk);
+  border: 1.5px solid var(--kaam-stone);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lift);
+  overflow: hidden;
+}
+
+.login-card-header {
+  padding: 28px 32px 20px;
+  border-bottom: 1px solid var(--kaam-line);
+  background: var(--kaam-paper);
+}
+
+.login-card-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--kaam-ink);
+  margin-bottom: 4px;
+}
+
+.login-card-sub {
+  font-size: 13px;
+  color: var(--kaam-stone-dark);
+}
+
+.login-form-body {
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.login-error {
+  background: var(--kaam-danger-soft);
+  border: 1px solid rgba(161,70,47,0.3);
+  border-left: 3px solid var(--kaam-danger);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--kaam-danger);
+}
+
+.login-card-footer {
+  padding: 16px 32px 28px;
+  background: var(--kaam-paper);
+  border-top: 1px solid var(--kaam-line);
+  text-align: center;
+  font-size: 13px;
+  color: var(--kaam-stone-dark);
+}
+
+.login-back {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 500;
+  color: var(--kaam-stone-dark);
+  transition: color var(--transition-fast);
+}
+.login-back:hover { color: var(--kaam-ink); }
+
+.login-outer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="login-page">
+  <div class="login-outer">
+    <div class="login-brand">
+      <a href="/" class="kaam-wordmark" style="justify-content:center; text-decoration:none;">
+        <div class="kaam-wordmark-stamp">
+          <span class="kaam-wordmark-text">kaam</span>
+        </div>
+      </a>
+      <div class="login-brand-sub">social commerce for Indian sellers</div>
+    </div>
+
+    <div class="login-card">
+      <div class="login-card-header">
+        <h1 class="login-card-title">Seller Login</h1>
+        <p class="login-card-sub">Enter your credentials to access the dashboard.</p>
+      </div>
+
+      <form class="login-form-body" method="POST" action="{% url 'login' %}">
+        {% csrf_token %}
+
+        {% if messages %}
+          {% for message in messages %}
+          <div class="login-error">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+
+        <div class="input-group">
+          <label for="username" class="input-label">Username</label>
+          <input type="text" id="username" name="username" class="input-field"
+                 placeholder="your_username" autocomplete="username"
+                 value="{{ request.POST.username|default:'' }}" autofocus>
+        </div>
+
+        <div class="input-group">
+          <label for="password" class="input-label">Password</label>
+          <input type="password" id="password" name="password" class="input-field"
+                 placeholder="••••••••" autocomplete="current-password">
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full" id="login-submit-btn">
+          Login to Dashboard →
+        </button>
+      </form>
+
+      <div class="login-card-footer">
+        Don't have an account? Contact your Kaam administrator.
+      </div>
+    </div>
+
+    <div style="margin-top: 20px;">
+      <a href="/" class="login-back">← Back to Kaam</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelector('.login-form-body')?.addEventListener('submit', function() {
+  const btn = document.getElementById('login-submit-btn');
+  if (btn) {
+    btn.textContent = 'Logging in…';
+    // We don't disable the button immediately to ensure the form submits properly across all browsers,
+    // or we can use a small timeout to disable it.
+    setTimeout(() => { btn.disabled = true; }, 10);
+  }
+});
+</script>
+{% endblock %}

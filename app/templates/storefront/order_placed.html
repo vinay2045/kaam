@@ -1,0 +1,88 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Placed — {{ seller.business_name }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/base.css' %}?v={% now 'U' %}">
+  <link rel="stylesheet" href="{% static 'css/components.css' %}?v={% now 'U' %}">
+  <link rel="stylesheet" href="{% static 'css/storefront.css' %}?v={% now 'U' %}">
+  <script>
+    (function() {
+      var theme = localStorage.getItem('theme');
+      if (!theme) theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+</head>
+<body>
+<div class="order-placed-page">
+  <div class="order-placed-card">
+    <span class="order-placed-check">🎉</span>
+    <h1 class="order-placed-h">Order Placed!</h1>
+    <p class="order-placed-sub">
+      Thank you, <strong>{{ order.buyer_name }}</strong>!<br>
+      {{ seller.business_name }} will process your order soon.
+    </p>
+
+    <div class="order-id-label">Your Order ID</div>
+    <div class="order-id-display" id="placed-order-id">{{ order.order_id }}</div>
+    <button class="copy-btn" onclick="copyToClipboard('{{ order.order_id }}', this)" style="margin:0 auto 20px">
+      📋 Copy Order ID
+    </button>
+
+    <div class="order-placed-thank">
+      Save this Order ID. You can track your delivery at any time using it.
+    </div>
+
+    <!-- Order items summary -->
+    {% if order.items.all %}
+    <div class="order-summary-card" style="text-align:left;margin-bottom:24px">
+      <div class="order-summary-header">What you ordered</div>
+      {% for item in order.items.all %}
+      <div class="order-summary-item">
+        {% if item.product_image_url %}
+        <img src="{{ item.product_image_url }}" alt="{{ item.product_title }}" class="order-summary-img">
+        {% endif %}
+        <div class="order-summary-item-info">
+          <div class="order-summary-item-title">{{ item.product_title }}</div>
+          <div class="order-summary-item-meta">{{ item.selected_size_color }} · Qty {{ item.quantity }}</div>
+        </div>
+        <div class="order-summary-item-price">₹{{ item.subtotal }}</div>
+      </div>
+      {% endfor %}
+      <div class="order-summary-total">
+        <div class="order-summary-total-label">Total</div>
+        <div class="order-summary-total-amount">₹{{ order.total_amount }}</div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="order-placed-actions">
+      <a href="{% url 'trace_order_detail' order.order_id %}" class="btn btn-primary btn-full">
+        Track My Order →
+      </a>
+      <a href="/{{ seller.username }}/" class="btn btn-ghost btn-full">
+        ← Back to Store
+      </a>
+      {% if seller.whatsapp_number %}
+      <a href="https://wa.me/{{ seller.whatsapp_number|cut:' ' }}?text=Hi%2C+I+placed+order+{{ order.order_id }}+on+Kaam.+Want+to+confirm."
+         target="_blank" class="btn btn-ghost btn-full">
+        💬 Message Store on WhatsApp
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+<script>
+function copyToClipboard(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    if (btn) { btn.textContent = '✓ Copied!'; setTimeout(() => btn.textContent = '📋 Copy Order ID', 2000); }
+  });
+}
+</script>
+</body>
+</html>

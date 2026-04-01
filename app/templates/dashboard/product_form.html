@@ -1,0 +1,1041 @@
+{% extends "base/base_seller.html" %}
+{% load static %}
+
+{% block meta %}
+<title>{% if mode == 'edit' %}Edit Product{% else %}Add Product{% endif %} — Kaam</title>
+{% endblock %}
+
+{% block mob_prod_active %}active{% endblock %}
+
+{% block dashboard_content %}
+<div class="product-form-page">
+
+  <div class="breadcrumb">
+    <a href="{% url 'product_list' %}">Products</a>
+    <span>›</span>
+    <span>{% if mode == 'edit' %}Edit "{{ product.title|truncatechars:30 }}"{% else %}Add New Product{% endif %}</span>
+  </div>
+
+  <div class="product-form-card">
+    <div class="product-form-header">
+      <h2>{% if mode == 'edit' %}Edit Product{% else %}Add New Product{% endif %}</h2>
+      <a href="{% url 'product_list' %}" class="btn btn-ghost btn-sm">Cancel</a>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" class="product-form-main">
+      {% csrf_token %}
+      <div class="product-form-body">
+
+        {% if errors %}
+        <div class="alert alert-danger">
+          <ul style="margin:0;padding-left:16px">
+            {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+
+        <!-- SECTION 1: Image -->
+        <div>
+          <div class="form-section-title">Product Image</div>
+
+          {% if mode == 'edit' and product.image %}
+          <div style="margin-bottom:16px">
+            <p style="font-size:13px;color:var(--kaam-stone-dark);margin-bottom:10px">Current image:</p>
+            <div class="image-preview" id="image-preview">
+              <img src="{{ product.image.url }}" alt="{{ product.title }}" id="preview-img">
+              <button type="button" class="image-preview-remove" id="remove-preview" title="Remove">✕</button>
+            </div>
+          </div>
+          <div class="upload-zone" id="upload-zone" style="display:none">
+            <input type="file" id="id_image" name="image" accept="image/*">
+            <div class="upload-zone-icon">📷</div>
+            <div class="upload-zone-label">Click to upload a new image</div>
+            <div class="upload-zone-hint">JPG, PNG up to 5MB</div>
+          </div>
+          <p style="font-size:12px;color:var(--kaam-stone-dark);margin-top:8px">Leave blank to keep the current image.</p>
+          {% else %}
+          <div class="upload-zone" id="upload-zone">
+            <input type="file" id="id_image" name="image" accept="image/*" {% if mode == 'add' %}required{% endif %}>
+            <div class="upload-zone-icon">📷</div>
+            <div class="upload-zone-label">Click to upload or drag &amp; drop</div>
+            <div class="upload-zone-hint">JPG, PNG up to 5MB</div>
+          </div>
+          <div class="image-preview" id="image-preview" style="display:none; margin-top:12px">
+            <img src="" alt="Preview" id="preview-img" style="width:200px;height:200px;object-fit:cover">
+            <button type="button" class="image-preview-remove" id="remove-preview" title="Remove">✕</button>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- SECTION 2: Product Details -->
+        <div class="form-section">
+          <div class="form-section-title">Product Details</div>
+          <div class="details-stack" style="display:flex;flex-direction:column;gap:16px">
+            <div class="input-group">
+              <label for="id_title" class="input-label">Product Title *</label>
+              <input type="text" id="id_title" name="title" class="input-field"
+                     placeholder="e.g. Blue Oversized Cotton Shirt"
+                     value="{% if form_data %}{{ form_data.title }}{% elif product %}{{ product.title }}{% endif %}" required maxlength="300">
+            </div>
+
+            <div class="grid-2">
+              <div class="input-group">
+                <label for="id_category" class="input-label">Category *</label>
+                <input type="text" id="id_category" name="category" class="input-field"
+                       placeholder="e.g. Clothing, Food, Toys"
+                       value="{% if form_data %}{{ form_data.category }}{% elif product %}{{ product.category }}{% endif %}" required>
+              </div>
+              <div class="input-group">
+                <label for="id_subcategory" class="input-label">Subcategory *</label>
+                <input type="text" id="id_subcategory" name="subcategory" class="input-field"
+                       placeholder="e.g. Shirt, Pant, Pickle"
+                       value="{% if form_data %}{{ form_data.subcategory }}{% elif product %}{{ product.subcategory }}{% endif %}" required>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label for="id_price" class="input-label">Price *</label>
+              <input type="number" id="id_price" name="price" class="input-field"
+                     placeholder="Enter price (e.g. 899)" step="0.01" min="1"
+                     value="{% if form_data %}{{ form_data.price }}{% elif product %}{{ product.price|floatformat:'0' }}{% endif %}" required>
+            </div>
+
+            {% if mode == 'edit' %}
+            <div class="input-group edit-product-id-card" style="background:var(--kaam-milk,#f9f7f2);border-radius:8px;padding:12px 14px;border:1px solid var(--kaam-line)">
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--kaam-stone-dark);margin-bottom:4px">Product ID (auto-generated)</div>
+              <div style="font-family:monospace;font-size:15px;font-weight:700;color:var(--kaam-soot);letter-spacing:0.08em">{{ product.product_id }}</div>
+              <div style="font-size:11px;color:var(--kaam-stone-dark);margin-top:4px">Share this ID with buyers so they can search for this product directly.</div>
+            </div>
+            <div class="input-group">
+              <label class="input-label availability-toggle" style="display:flex;align-items:center;gap:10px;cursor:pointer">
+                <input type="checkbox" name="is_available" id="id_is_available"
+                       {% if product.is_available %}checked{% endif %}
+                       style="width:16px;height:16px;accent-color:var(--kaam-saffron)">
+                Product is available for ordering
+              </label>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- SECTION 3: Variants & Stock -->
+        <div class="form-section">
+          <div class="form-section-title">Variants &amp; Stock</div>
+
+          <input type="hidden" id="id_variants_json" name="variants_json" 
+                 value="{% if form_data and form_data.variants_json %}{{ form_data.variants_json }}{% elif product and product.variants_json %}{{ product.variants_json|escape }}{% else %}[]{% endif %}">
+
+          <!-- Visual Builder (Method B) -->
+          <div class="visual-builder-wrap" style="border-top:none; margin-top:0; padding-top:0;">
+            <div class="vb-header">
+              <div class="vb-title">Variants &amp; Stock *</div>
+              <div class="vb-subtitle">Add your options one by one. Or simply type your Total Stock if you have no variants.</div>
+            </div>
+            
+            <div class="vb-add-bar">
+               <div class="vb-dynamic-wrap">
+                  <div class="vb-dynamic-header">
+                    <div class="vb-dynamic-title">Variant Fields</div>
+                    <button type="button" class="btn btn-ghost btn-sm" id="vb-add-attr-btn">+ Add Field</button>
+                  </div>
+                  <div class="vb-dynamic-subtitle">Keep Color / Flavor and Size / Weight, or remove them and add custom fields like Model, RAM, Warranty, Storage, etc.</div>
+                  <div id="vb-attr-list" class="vb-attr-list"></div>
+               </div>
+               <div class="vb-col vb-stock-col">
+                  <label class="input-label">Stock *</label>
+                  <input type="number" id="vb-stock-input" class="input-field" placeholder="e.g. 90" min="0">
+               </div>
+               <div class="vb-col vb-add-btn-col">
+                  <button type="button" class="btn btn-primary" id="vb-add-btn" style="height:42px; padding:0 24px;">Add Variant</button>
+               </div>
+            </div>
+
+            <div id="vb-table-wrap" style="display:none; margin-top:20px;">
+               <div style="font-size:12px; font-weight:700; color:var(--kaam-stone-dark); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.04em;">Added Variants</div>
+               <div class="vb-table" id="vb-table-body">
+                 <!-- JS rows go here -->
+               </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="product-form-footer">
+        <a href="{% url 'product_list' %}" class="btn btn-ghost">Cancel</a>
+        <button type="submit" class="btn btn-primary" id="save-product-btn">
+          {% if mode == 'edit' %}Save Changes{% else %}Add Product{% endif %}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+/* ── Variant format examples ── */
+.variant-format-examples {
+  background: var(--kaam-milk);
+  border: 1px solid var(--kaam-line);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+}
+.vfe-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--kaam-ink);
+  margin-bottom: 12px;
+}
+.vfe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.vfe-card {
+  background: var(--kaam-paper);
+  border: 1px solid var(--kaam-line);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+}
+.vfe-card-head {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--kaam-saffron);
+  margin-bottom: 6px;
+}
+.vfe-card code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--kaam-ink);
+  white-space: pre;
+  display: block;
+  line-height: 1.7;
+}
+.vfe-note {
+  font-size: 12px;
+  color: var(--kaam-stone-dark);
+}
+
+/* ── Live variant preview ── */
+.variant-preview-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 0 4px;
+}
+.variant-preview-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--kaam-stone-dark);
+  margin-bottom: 8px;
+}
+.vp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1.5px solid var(--kaam-line);
+  background: var(--kaam-paper);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--kaam-ink);
+  transition: all 0.15s;
+}
+.vp-chip .vp-stock {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--kaam-saffron);
+  color: #fff;
+  padding: 1px 7px;
+  border-radius: 99px;
+  font-weight: 700;
+}
+.vp-chip.out-of-stock {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+.variant-parse-error {
+  font-size: 13px;
+  color: var(--kaam-error, #c0392b);
+  margin-top: 6px;
+}
+
+/* ── Visual Builder ── */
+.visual-builder-wrap {
+  border-top: 1px dashed var(--kaam-stone);
+  margin-top: 32px;
+  padding-top: 24px;
+}
+.vb-header { margin-bottom: 16px; }
+.vb-title { font-size: 14px; font-weight: 700; color: var(--kaam-ink); }
+.vb-subtitle { font-size: 12px; color: var(--kaam-stone-dark); margin-top: 2px; }
+.vb-add-bar {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  background: var(--kaam-milk);
+  padding: 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--kaam-stone);
+}
+@media (max-width: 600px) {
+  .vb-add-bar { flex-direction: column; align-items: stretch; }
+  .vb-add-bar .vb-col { width: 100% !important; }
+}
+.vb-col { display: flex; flex-direction: column; flex: 1; }
+.vb-dynamic-wrap {
+  flex: 1 1 560px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.vb-dynamic-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.vb-dynamic-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--kaam-stone-dark);
+}
+.vb-dynamic-subtitle {
+  font-size: 12px;
+  color: var(--kaam-stone-dark);
+}
+.vb-attr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.vb-attr-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+.vb-attr-remove {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--kaam-line);
+  background: var(--kaam-paper);
+  color: var(--kaam-stone-dark);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.vb-attr-remove:hover {
+  border-color: var(--kaam-danger);
+  color: var(--kaam-danger);
+}
+.vb-stock-col {
+  flex: 0 0 140px;
+  min-width: 140px;
+}
+.vb-add-btn-col {
+  flex: 0 0 auto;
+  justify-content: flex-end;
+}
+.vb-table { 
+  border: 1px solid var(--kaam-stone); 
+  border-radius: var(--radius-md); 
+  overflow: hidden; 
+}
+.vb-row { 
+  display: flex; 
+  align-items: center; 
+  padding: 10px 14px; 
+  background: var(--kaam-milk); 
+  border-bottom: 1px solid var(--kaam-stone); 
+}
+.vb-row:last-child { border-bottom: none; }
+.vb-row-texts { flex: 1; display: flex; gap: 12px; align-items: center; font-size: 13px; font-weight: 600; color:var(--kaam-ink); }
+.vb-row-stock { display: inline-flex; align-items: center; gap:4px; font-family: var(--font-mono); font-size: 12px; background: var(--kaam-saffron-pale); color: var(--kaam-soot); padding: 4px 10px; border-radius: 99px; }
+.vb-row-del { cursor: pointer; color: var(--kaam-stone-dark); font-weight: 700; font-size: 14px; padding: 4px; transition: color 0.15s; }
+.vb-row-del:hover { color: var(--kaam-danger); }
+@media (max-width: 800px) {
+  .vb-attr-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 34px;
+  }
+  .vb-attr-remove {
+    width: 34px;
+  }
+  .vb-stock-col {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .vb-add-btn-col {
+    width: 100%;
+  }
+  .vb-add-btn-col .btn {
+    width: 100%;
+  }
+}
+@media (max-width: 768px) {
+  .product-form-page {
+    padding: 8px !important;
+    padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important;
+  }
+  .breadcrumb {
+    display: none;
+  }
+  .product-form-card {
+    padding: 10px !important;
+    border-radius: 10px !important;
+  }
+  .product-form-header {
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin-bottom: 10px !important;
+  }
+  .product-form-header h2 {
+    font-size: 16px !important;
+    line-height: 1.2;
+    margin: 0 !important;
+  }
+  .product-form-header .btn {
+    height: 30px;
+    min-height: 30px;
+    font-size: 11px !important;
+    padding: 0 10px !important;
+    white-space: nowrap;
+  }
+  .product-form-main {
+    gap: 0 !important;
+  }
+  .product-form-body {
+    gap: 9px !important;
+  }
+  .form-section {
+    padding: 9px !important;
+    margin-bottom: 8px !important;
+  }
+  .form-section-title {
+    margin-bottom: 6px !important;
+    font-size: 12px !important;
+    letter-spacing: 0.04em;
+  }
+  .grid-2 {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+  .details-stack {
+    gap: 9px !important;
+  }
+  .input-group {
+    gap: 4px !important;
+  }
+  .input-label {
+    font-size: 11px !important;
+  }
+  .input-field {
+    height: 34px !important;
+    min-height: 34px !important;
+    padding: 6px 9px !important;
+    font-size: 13px !important;
+  }
+  .upload-zone {
+    padding: 10px 8px !important;
+    min-height: 88px !important;
+  }
+  .upload-zone-label {
+    font-size: 11px !important;
+  }
+  .upload-zone-hint {
+    font-size: 10px !important;
+  }
+  .product-form-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px !important;
+    padding: 10px !important;
+    margin: 8px -10px -10px !important;
+    background: rgba(18, 18, 18, 0.97);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(6px);
+  }
+  .product-form-footer .btn {
+    width: 100%;
+    height: 36px;
+    min-height: 36px;
+    padding: 0 10px !important;
+    font-size: 12px !important;
+  }
+  .vb-add-bar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 120px;
+    grid-template-areas:
+      "fields fields"
+      "stock add";
+    align-items: end;
+    padding: 10px;
+    gap: 8px;
+  }
+  .vb-dynamic-wrap { grid-area: fields; }
+  .vb-dynamic-header {
+    align-items: center;
+    gap: 6px;
+  }
+  #vb-add-attr-btn {
+    width: auto;
+    min-height: 30px;
+    padding: 0 10px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .vb-dynamic-subtitle {
+    font-size: 10px;
+    line-height: 1.35;
+    margin-top: -2px;
+  }
+  .vb-attr-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 30px;
+    gap: 5px;
+  }
+  .vb-attr-list {
+    max-height: 200px;
+    overflow: auto;
+    padding-right: 2px;
+  }
+  .vb-attr-remove {
+    width: 30px;
+    height: 30px;
+    font-size: 13px;
+  }
+  .vb-stock-col {
+    grid-area: stock;
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+  }
+  .vb-stock-col .input-label {
+    margin-bottom: 3px;
+  }
+  .vb-stock-col .input-field {
+    height: 34px !important;
+  }
+  .vb-add-btn-col {
+    grid-area: add;
+    width: 100%;
+  }
+  .vb-add-btn-col .btn {
+    width: 100%;
+    height: 34px !important;
+    min-height: 34px !important;
+    padding: 0 10px !important;
+    font-size: 12px !important;
+  }
+  .edit-product-id-card {
+    padding: 9px 10px !important;
+    border-radius: 8px !important;
+  }
+  .edit-product-id-card > div:nth-child(2) {
+    font-size: 13px !important;
+    word-break: break-all;
+  }
+  .availability-toggle {
+    gap: 8px !important;
+    font-size: 12px !important;
+    padding: 8px 9px;
+    border: 1px solid var(--kaam-line);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.02);
+  }
+  .availability-toggle input {
+    width: 17px !important;
+    height: 17px !important;
+    flex: 0 0 17px;
+  }
+  .vb-row {
+    padding: 7px 8px;
+    gap: 6px;
+    align-items: flex-start;
+  }
+  .vb-row-texts {
+    font-size: 11px;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .vb-row-stock {
+    padding: 3px 8px;
+    font-size: 10px;
+  }
+}
+@media (max-width: 420px) {
+  .product-form-page {
+    padding: 6px !important;
+    padding-bottom: calc(86px + env(safe-area-inset-bottom)) !important;
+  }
+  .product-form-card {
+    padding: 8px !important;
+  }
+  .form-section {
+    padding: 7px !important;
+  }
+  .product-form-header {
+    gap: 6px;
+  }
+  .product-form-header h2 {
+    font-size: 15px !important;
+  }
+  .product-form-header .btn {
+    height: 28px;
+    min-height: 28px;
+    font-size: 10px !important;
+    padding: 0 8px !important;
+  }
+  .input-field {
+    height: 33px !important;
+    min-height: 33px !important;
+    font-size: 12px !important;
+    padding: 6px 8px !important;
+  }
+  .upload-zone {
+    min-height: 82px !important;
+  }
+  .product-form-footer {
+    gap: 6px !important;
+    margin: 8px -8px -8px !important;
+    padding: 8px !important;
+  }
+  .product-form-footer .btn {
+    height: 34px;
+    min-height: 34px;
+    font-size: 11px !important;
+  }
+  .vb-add-bar {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "fields"
+      "stock"
+      "add";
+    padding: 8px;
+    gap: 7px;
+  }
+  .vb-dynamic-subtitle {
+    display: none;
+  }
+  .vb-attr-list {
+    max-height: 180px;
+  }
+  .vb-attr-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 28px;
+    gap: 4px;
+  }
+  .vb-attr-remove {
+    width: 28px;
+    height: 28px;
+  }
+  .availability-toggle {
+    font-size: 11px !important;
+    padding: 7px 8px;
+  }
+  .vb-title {
+    font-size: 12px;
+  }
+  .vb-subtitle {
+    font-size: 10px;
+  }
+}
+</style>
+
+<script>
+// ── Mirror of server-side variant_parser in JS ──
+function parseVariants(rawText) {
+  if (!rawText || !rawText.trim()) return [];
+  const textTrimmed = rawText.trim();
+  
+  // If purely a number, it's a default total stock
+  if (/^\d+$/.test(textTrimmed)) {
+    return [{ label: 'Default', stock: parseInt(textTrimmed), is_default: true }];
+  }
+  
+  const variants = [];
+  const lines = splitTopLevel(textTrimmed);
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const colonIdx = trimmed.indexOf(':');
+    if (colonIdx === -1) continue;
+    const key = trimmed.slice(0, colonIdx).trim();
+    const value = trimmed.slice(colonIdx + 1).trim();
+    if (!key || !value) continue;
+
+    // Detect sub-variant pattern: word(number)
+    const subPattern = /(\S+?)\s*\((\d+)\)/g;
+    const subMatches = [...value.matchAll(subPattern)];
+
+    if (subMatches.length > 0) {
+      for (const m of subMatches) {
+        const sizeStr = m[1].replace(/^,+|,+$/g, '').trim();
+        const stock = parseInt(m[2]) || 0;
+        const label = `${key} - ${formatSize(sizeStr)}`;
+        variants.push({ label, color: key, size: sizeStr, stock });
+      }
+    } else {
+      const clean = value.replace(/,$/, '').trim();
+      const stock = parseInt(clean) || 0;
+      const varDict = { label: key, stock };
+      if (key.toLowerCase() === 'default') varDict.is_default = true;
+      variants.push(varDict);
+    }
+  }
+  return variants;
+}
+
+function formatSize(size) {
+  const wordSizes = new Set(['small','medium','large','xl','xxl','xs','free','freesize']);
+  const s = size.trim();
+  if (wordSizes.has(s.toLowerCase())) return s.charAt(0).toUpperCase() + s.slice(1);
+  return s;
+}
+
+function splitTopLevel(text) {
+  const result = [];
+  for (const rawLine of text.split('\n')) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    const parts = splitOnTopCommasBeforeColon(line);
+    result.push(...parts);
+  }
+  return result;
+}
+
+function splitOnTopCommasBeforeColon(text) {
+  const parts = [];
+  let depth = 0, current = '';
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '(') { depth++; current += c; }
+    else if (c === ')') { depth = Math.max(0, depth - 1); current += c; }
+    else if (c === ',' && depth === 0) {
+      const rest = text.slice(i + 1);
+      const nextColon = rest.indexOf(':');
+      const nextComma = rest.indexOf(',');
+      if (nextColon !== -1 && (nextComma === -1 || nextColon < nextComma)) {
+        if (current.trim()) parts.push(current.trim());
+        current = '';
+        continue;
+      } else { current += c; }
+    } else { current += c; }
+  }
+  if (current.trim()) parts.push(current.trim());
+  return parts.length ? parts : [text];
+}
+
+// ── Live preview rendering ──
+function liveParseVariants(rawText) {
+  const container = document.getElementById('variant-live-preview');
+  if (!container) return;
+
+  if (!rawText.trim()) {
+    container.innerHTML = '<div style="font-size:13px;color:var(--kaam-stone-dark);padding:8px 0">No variants — buyers will see no size/color options.</div>';
+    return;
+  }
+
+  const variants = parseVariants(rawText);
+  if (variants.length === 0) {
+    container.innerHTML = '<div class="variant-parse-error">⚠ Could not parse — check your format above.</div>';
+    return;
+  }
+  
+  if (variants.length === 1 && variants[0].is_default) {
+      container.innerHTML = `
+        <div class="variant-preview-label">Preview — Total Stock Settings:</div>
+        <div class="variant-preview-area">
+          <div class="vp-chip ${variants[0].stock === 0 ? 'out-of-stock' : ''}">
+            Total Available Stock
+            <span class="vp-stock">${variants[0].stock} units</span>
+          </div>
+        </div>
+      `;
+      return;
+  }
+
+  const chipsHtml = variants.map(v => `
+    <div class="vp-chip ${v.stock === 0 ? 'out-of-stock' : ''}">
+      ${v.label}
+      <span class="vp-stock">${v.stock} left</span>
+    </div>
+  `).join('');
+
+  container.innerHTML = `
+    <div class="variant-preview-label">Preview — ${variants.length} variant${variants.length !== 1 ? 's' : ''} created:</div>
+    <div class="variant-preview-area">${chipsHtml}</div>
+  `;
+}
+
+// Run on page load if editing
+document.addEventListener('DOMContentLoaded', () => {
+  const ta = document.getElementById('id_size_color_raw');
+  if (ta && ta.value.trim()) liveParseVariants(ta.value);
+  else {
+    const container = document.getElementById('variant-live-preview');
+    if (container) container.innerHTML = '<div style="font-size:13px;color:var(--kaam-stone-dark);padding:8px 0">No variants — buyers will see no size/color options.</div>';
+  }
+  
+  initVb();
+});
+
+let vbItems = [];
+let vbNextId = 1;
+let vbDraftAttrs = [];
+
+function initVb() {
+  const addBtn = document.getElementById('vb-add-btn');
+  const addAttrBtn = document.getElementById('vb-add-attr-btn');
+  const stockEl = document.getElementById('vb-stock-input');
+  if (addBtn) addBtn.addEventListener('click', addVbItem);
+  if (addAttrBtn) addAttrBtn.addEventListener('click', () => addDraftAttr('', ''));
+  if (stockEl) {
+    stockEl.addEventListener('keypress', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addVbItem();
+      }
+    });
+  }
+  resetDraftAttrsToDefault();
+  parseExistingRawToVb();
+}
+
+function resetDraftAttrsToDefault() {
+  vbDraftAttrs = [
+    { id: Date.now(), name: 'Color / Flavor', value: '' },
+    { id: Date.now() + 1, name: 'Size / Weight', value: '' }
+  ];
+  renderDraftAttrRows();
+}
+
+function addDraftAttr(name, value) {
+  vbDraftAttrs.push({
+    id: Date.now() + Math.floor(Math.random() * 10000),
+    name: name || '',
+    value: value || ''
+  });
+  renderDraftAttrRows();
+}
+
+function removeDraftAttr(id) {
+  vbDraftAttrs = vbDraftAttrs.filter(attr => attr.id !== id);
+  renderDraftAttrRows();
+}
+
+function updateDraftAttr(id, field, value) {
+  vbDraftAttrs = vbDraftAttrs.map(attr => {
+    if (attr.id !== id) return attr;
+    return { ...attr, [field]: value };
+  });
+}
+
+function renderDraftAttrRows() {
+  const list = document.getElementById('vb-attr-list');
+  if (!list) return;
+  list.innerHTML = vbDraftAttrs.map(attr => `
+    <div class="vb-attr-row">
+      <input type="text" class="input-field" placeholder="Field name (e.g. Model, RAM, Color)" value="${escapeHtml(attr.name)}" oninput="updateDraftAttr(${attr.id}, 'name', this.value)">
+      <input type="text" class="input-field" placeholder="Field value (e.g. Bravia X80L, 8GB, Green)" value="${escapeHtml(attr.value)}" oninput="updateDraftAttr(${attr.id}, 'value', this.value)">
+      <button type="button" class="vb-attr-remove" onclick="removeDraftAttr(${attr.id})" title="Remove field">✕</button>
+    </div>
+  `).join('');
+}
+
+function sanitizeAttrName(name) {
+  return (name || '').replace(/[•:]/g, '').trim();
+}
+
+function sanitizeAttrValue(value) {
+  return (value || '').replace(/[•]/g, '').trim();
+}
+
+function inferLegacyAttributes(label) {
+  const cleanedLabel = (label || '').trim();
+  if (!cleanedLabel || cleanedLabel.toLowerCase() === 'default') return [];
+  if (cleanedLabel.includes(' • ')) {
+    return cleanedLabel.split(' • ').map(part => {
+      const idx = part.indexOf(':');
+      if (idx === -1) return null;
+      const key = sanitizeAttrName(part.slice(0, idx));
+      const val = sanitizeAttrValue(part.slice(idx + 1));
+      if (!key || !val) return null;
+      return { name: key, value: val };
+    }).filter(Boolean);
+  }
+  if (cleanedLabel.includes(' - ')) {
+    const parts = cleanedLabel.split(' - ');
+    if (parts.length >= 2) {
+      return [
+        { name: 'Color / Flavor', value: sanitizeAttrValue(parts[0]) },
+        { name: 'Size / Weight', value: sanitizeAttrValue(parts.slice(1).join(' - ')) }
+      ];
+    }
+  }
+  return [{ name: 'Variant', value: cleanedLabel }];
+}
+
+function parseExistingRawToVb() {
+  const t = document.getElementById('id_variants_json').value.trim();
+  if (!t || t === '[]') return;
+  try {
+    const parsed = JSON.parse(t);
+    vbItems = [];
+    parsed.forEach(v => {
+      let attributes = [];
+      if (Array.isArray(v.attributes) && v.attributes.length > 0) {
+        attributes = v.attributes.map(attr => ({
+          name: sanitizeAttrName(attr.name || ''),
+          value: sanitizeAttrValue(attr.value || '')
+        })).filter(attr => attr.name && attr.value);
+      } else {
+        if (v.color) attributes.push({ name: 'Color / Flavor', value: sanitizeAttrValue(v.color) });
+        if (v.size) attributes.push({ name: 'Size / Weight', value: sanitizeAttrValue(v.size) });
+        if (attributes.length === 0) attributes = inferLegacyAttributes(v.label || '');
+      }
+      vbItems.push({
+        id: vbNextId++,
+        attributes: attributes,
+        stock: parseInt(v.stock, 10) || 0
+      });
+    });
+    generateRawTextFromVb();
+    renderVbTable();
+  } catch (e) {
+    console.error('Failed to parse variants_json', e);
+  }
+}
+
+function getItemDisplay(item) {
+  const attrs = Array.isArray(item.attributes) ? item.attributes : [];
+  const cleanAttrs = attrs.filter(attr => sanitizeAttrName(attr.name) && sanitizeAttrValue(attr.value)).map(attr => ({
+    name: sanitizeAttrName(attr.name),
+    value: sanitizeAttrValue(attr.value)
+  }));
+  if (cleanAttrs.length === 0) {
+    return { label: 'Default', attributes: [], color: '', size: '', isDefault: true };
+  }
+  const label = cleanAttrs.map(attr => `${attr.name}: ${attr.value}`).join(' • ');
+  const colorAttr = cleanAttrs.find(attr => /color|flavor/i.test(attr.name));
+  const sizeAttr = cleanAttrs.find(attr => /size|weight/i.test(attr.name));
+  return {
+    label,
+    attributes: cleanAttrs,
+    color: colorAttr ? colorAttr.value : '',
+    size: sizeAttr ? sizeAttr.value : '',
+    isDefault: false
+  };
+}
+
+function addVbItem() {
+  const stockEl = document.getElementById('vb-stock-input');
+  const stock = parseInt(stockEl.value, 10);
+  if (isNaN(stock) || stock < 0) {
+    alert('Please enter a valid stock amount greater than or equal to 0.');
+    stockEl.focus();
+    return;
+  }
+  const normalizedAttrs = vbDraftAttrs.map(attr => ({
+    name: sanitizeAttrName(attr.name),
+    value: sanitizeAttrValue(attr.value)
+  }));
+  const filled = normalizedAttrs.filter(attr => attr.name || attr.value);
+  const invalid = filled.some(attr => !attr.name || !attr.value);
+  if (invalid) {
+    alert('Each custom field must have both name and value.');
+    return;
+  }
+  const attributes = normalizedAttrs.filter(attr => attr.name && attr.value);
+  vbItems.push({
+    id: vbNextId++,
+    attributes,
+    stock
+  });
+  stockEl.value = '';
+  generateRawTextFromVb();
+  renderVbTable();
+}
+
+function removeVbItem(id) {
+  vbItems = vbItems.filter(v => v.id !== id);
+  generateRawTextFromVb();
+  renderVbTable();
+}
+
+function renderVbTable() {
+  const wrap = document.getElementById('vb-table-wrap');
+  const tbody = document.getElementById('vb-table-body');
+  if (vbItems.length === 0) {
+    wrap.style.display = 'none';
+    tbody.innerHTML = '';
+    return;
+  }
+  wrap.style.display = 'block';
+  tbody.innerHTML = vbItems.map(item => {
+    const display = getItemDisplay(item);
+    const title = display.isDefault
+      ? '<span style="font-style:italic;color:var(--kaam-stone-dark)">Default Variant (No options)</span>'
+      : display.attributes.map(attr => `<span>${escapeHtml(attr.name)}: ${escapeHtml(attr.value)}</span>`).join('<span style="color:var(--kaam-stone);margin:0 4px">•</span>');
+    return `
+      <div class="vb-row">
+        <div class="vb-row-texts">${title}</div>
+        <div class="vb-row-stock">${item.stock} in stock</div>
+        <div style="margin-left:14px">
+          <span class="vb-row-del" onclick="removeVbItem(${item.id})" title="Remove">✕</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function generateRawTextFromVb() {
+  const rawBox = document.getElementById('id_variants_json');
+  if (vbItems.length === 0) {
+    rawBox.value = '[]';
+    return;
+  }
+  const jsonOut = vbItems.map(item => {
+    const display = getItemDisplay(item);
+    if (display.isDefault) {
+      return {
+        label: 'Default',
+        stock: item.stock,
+        is_default: true
+      };
+    }
+    const entry = {
+      label: display.label,
+      stock: item.stock,
+      attributes: display.attributes
+    };
+    if (display.color) entry.color = display.color;
+    if (display.size) entry.size = display.size;
+    return entry;
+  });
+  rawBox.value = JSON.stringify(jsonOut);
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+</script>
+{% endblock %}

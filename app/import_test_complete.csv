@@ -1,0 +1,26 @@
+Order ID,Date,Customer,WhatsApp,Email,Instagram,Address Line 1,Address Line 2,City,State,Pincode,Items Ordered,Payment Method,UTR Number,Status,Confirmed,Total Amount
+ORD-20260401031301-111,2026-04-01 10:00,Rahul Kumar,9876543210,rahul@example.com,@rahul_ig,Flat 101,Gokul Dham,Mumbai,Maharashtra,400001,2x kk (Yellow),ONLINE,UTR001,PLACED,Yes,1400.00
+ORD-20260401031305-222,2026-04-01 10:15,Priya Sharma,9123456789,priya@sharma.com,@priya_s,House No 45,Main Road,Delhi,Delhi,110001,1x shsh (Blue - Large),COD,,PENDING,No,999.00
+ORD-20260401031310-333,2026-04-01 10:30,Amit Patel,9000000001,amit@kaam.me,,32 Sunny Lane,,Ahmedabad,Gujarat,380001,3x kk (Red),ONLINE,UTR003,PACKED,Yes,2100.00
+ORD-20260401031315-444,2026-04-01 11:05,Sanya Gupta,9111222333,sanya@gmail.com,@sanya_style,Building A,Tech Park,Bangalore,Karnataka,560001,1x shsh (White),COD,,DELIVERED,Yes,999.00
+ORD-20260401031320-555,2026-04-01 11:15,Karan Johar,9010101010,karan@movies.com,,Dharma Villa,,Film City,Maharashtra,400063,2x sjs (Standard),ONLINE,UTR005,SHIPPED,Yes,1800.00
+ORD-20260401031325-666,2026-04-01 11:30,Ananya Panday,9000000000,ananya@panday.me,,Liger Residency,Bandra,Mumbai,Maharashtra,400050,1x Blue Shirt (Small),ONLINE,UTR006,PLACED,No,800.00
+ORD-20260401031330-777,2026-04-01 11:45,Akshay Kumar,9101010101,akshay@khiladi.com,,Fitness Palace,,Chandigarh,Punjab,160001,4x kk (Yellow),COD,,PENDING,No,2800.00
+ORD-20260401031335-888,2026-04-01 12:00,Deepika Padukone,9222333444,deepika@queen.com,@deepika,Lotus Tower,,Mumbai,Maharashtra,400025,1x sjs (Gold),ONLINE,UTR008,PLACED,Yes,900.00
+ORD-20260401031340-999,2026-04-01 12:15,Ranveer Singh,9333444555,ranveer@energy.me,@ranveer,Gully House,Plot 9,Mumbai,Maharashtra,400050,2x shsh (Crazy Print) | 1x kk (Neon),ONLINE,UTR009,PACKED,Yes,2800.00
+ORD-20260401031345-010,2026-04-01 12:30,Virat Kohli,9444555666,virat@king.me,@virat,Century Villa,Sec 25,Gurugram,Haryana,122001,1x Blue Shirt (Medium),ONLINE,UTR010,DELIVERED,Yes,1200.00
+ORD-20260401031350-011,2026-04-01 12:45,Hardik Pandya,9555666777,hardik@allrounder.me,,Pandya Villa,,Surat,Gujarat,395001,2x sjs (Matte Black),COD,,PLACED,No,1800.00
+ORD-20260401031355-012,2026-04-01 13:00,Alia Bhatt,9666777888,alia@studios.com,@alia,Rocky Villa,,Mumbai,Maharashtra,400002,1x kk (Pink),ONLINE,UTR012,CONFIRMED,Yes,700.00
+ORD-20260401031401-013,2026-04-01 13:15,Shah Rukh Khan,9777888999,srk@mannat.me,@srk,Mannat,Bandstand,Mumbai,Maharashtra,400050,5x kk (Classic),ONLINE,UTR013,DELIVERED,Yes,3500.00
+ORD-20260401031405-014,2026-04-01 13:30,Mahendra Dhoni,9888999000,msd@captain.me,,Farm House,Sec 4,Ranchi,Jharkhand,834001,1x shsh (Vintage),COD,,PENDING,No,999.00
+ORD-20260401031410-015,2026-04-01 13:45,Rohit Sharma,9990001112,rohit@hitman.me,,High Rise,,Mumbai,Maharashtra,400010,2x Blue Shirt (X-Large),ONLINE,UTR015,SHIPPED,Yes,1600.00
+ORD-20260401031415-016,2026-04-01 14:00,Sunil Chhetri,9000111222,sunil@goal.me,,Soccer Court,Area 5,Bengaluru,Karnataka,560001,1x sjs (Elite Edition),ONLINE,UTR016,PLACED,Yes,1100.00
+ORD-20260401031420-017,2026-04-01 14:15,Neeraj Chopra,9111222333,neeraj@javelin.me,,Gold Villa,Sec 1,Panipat,Haryana,132103,1x kk (Yellow Special),COD,,PACKED,Yes,750.00
+ORD-20260401031425-018,2026-04-01 14:30,Mary Kom,9222333444,mary@boxing.org,,Punch Palace,,Imphal,Manipur,795001,2x sjs (Power Blue),ONLINE,UTR018,PLACED,No,1800.00
+ORD-20260401031430-019,2026-04-01 14:45,Sachin Tendulkar,9333444555,sachin@god.me,,God-Level Villa,,Mumbai,Maharashtra,400050,1x kk (Legacy),ONLINE,UTR019,DELIVERED,Yes,1000.00
+ORD-20260401031435-020,2026-04-01 15:00,P.V. Sindhu,9444555666,sindhu@badminton.me,,Court 1,,Hyderabad,Telangana,500001,2x shsh (Fast Move),COD,,CONFIRMED,No,1998.00
+ORD-20260401031440-021,2026-04-01 15:15,Viswanathan Anand,9555666777,vishy@chess.me,,Checkmate Apt,Square 4,Chennai,Tamil Nadu,600001,1x sjs (Grandmaster),ONLINE,UTR021,PLACED,Yes,1200.00
+ORD-20260401031445-022,2026-04-01 15:30,Smriti Mandhana,9666777888,smriti@cricket.me,,Willow Wing,,Sangli,Maharashtra,416416,1x Blue Shirt (Slim Fit),ONLINE,UTR022,SHIPPED,Yes,850.00
+ORD-20260401031450-023,2026-04-01 15:45,Abhinav Bindra,9777888999,abhinav@shooter.me,,Target Villa,,Zirakpur,Punjab,140603,1x sjs (Precision),COD,,PLACED,No,950.00
+ORD-20260401031455-024,2026-04-01 16:00,Hima Das,9888999000,hima@express.me,,Express Apt,Lane 7,Dhing,Assam,782123,2x kk (Green Stripe),ONLINE,UTR024,PACKED,Yes,1500.00
+ORD-20260401031501-025,2026-04-01 16:15,Mirabai Chanu,9990001112,mira@weight.me,,Strong Villa,,Imphal,Manipur,795001,1x sjs (Iron Grey),COD,,PENDING,No,920.00

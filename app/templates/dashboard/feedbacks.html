@@ -1,0 +1,91 @@
+{% extends "base/base_seller.html" %}
+{% load static %}
+
+{% block meta %}<title>Feedbacks — Kaam</title>{% endblock %}
+
+{% block dashboard_content %}
+<div class="dashboard-main">
+
+  <div style="margin-bottom:24px">
+    <div class="eyebrow">Customer Voice</div>
+    <h1 style="font-size:26px">Buyer Feedbacks</h1>
+  </div>
+
+  <!-- Summary -->
+  {% if avg_stars %}
+  <div class="stats-grid" style="margin-bottom:28px">
+    <div class="stat-card stat-card-anchor">
+      <div class="stat-label">Average Rating</div>
+      <div class="stat-value" style="color:var(--kaam-saffron)">{{ avg_stars|floatformat:1 }} ★</div>
+      <div class="stat-change" style="color:var(--kaam-stone-dark)">from {{ total_feedbacks }} review{{ total_feedbacks|pluralize }}</div>
+    </div>
+    {% for star, count in star_breakdown.items %}
+    <div class="stat-card" style="text-align:center">
+      <div class="stat-label">{{ star }} Star{{ star|pluralize }}</div>
+      <div class="stat-value" style="font-size:22px">{{ count }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Issues: Not Received -->
+  {% if issues %}
+  <div style="margin-bottom:32px">
+    <h2 style="font-size:16px;font-weight:700;margin-bottom:12px;color:var(--kaam-clay)">Urgent: Orders Reported "Not Received"</h2>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">
+      {% for issue in issues %}
+      <div class="feedback-card" style="border-color:#F8B4B4;background:#FFFaf9">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+          <div>
+            <div class="feedback-buyer">{{ issue.buyer_name }}</div>
+            <div class="feedback-order-id">{{ issue.order_id }}</div>
+            <div style="font-size:12px;color:var(--kaam-stone-dark);margin-top:4px">WhatsApp: {{ issue.buyer_whatsapp }}</div>
+          </div>
+          <div class="badge badge-danger" style="font-size:10px">Not Received</div>
+        </div>
+        {% if issue.not_received_reason %}
+        <div style="margin-top:10px;padding:10px;background:#fff5f4;border-radius:var(--radius-sm);font-size:13px;color:var(--kaam-clay);font-family:var(--font-mono)">
+          "{{ issue.not_received_reason }}"
+        </div>
+        {% endif %}
+        <div class="feedback-date" style="margin-top:10px">{{ issue.updated_at|date:"d M Y, g:i a" }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Feedbacks -->
+  <h2 style="font-size:16px;font-weight:700;margin-bottom:12px">All Feedbacks</h2>
+  {% if not feedbacks %}
+  <div class="empty-state">
+    <div class="empty-state-icon">💬</div>
+    <div class="empty-state-title">No feedbacks yet</div>
+    <div class="empty-state-body">Buyer feedback will appear here after orders are delivered.</div>
+  </div>
+  {% else %}
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">
+    {% for order in feedbacks %}
+    <div class="feedback-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div>
+          <div class="feedback-buyer">{{ order.buyer_name }}</div>
+          <div class="feedback-order-id">{{ order.order_id }}</div>
+        </div>
+        <div class="feedback-stars-row">
+          {% for i in "12345" %}
+          <span class="feedback-star {% if forloop.counter <= order.feedback_stars %}{% else %}empty{% endif %}">★</span>
+          {% endfor %}
+        </div>
+      </div>
+      {% if order.feedback_text %}
+      <div class="feedback-text">"{{ order.feedback_text }}"</div>
+      {% endif %}
+      <div class="feedback-date">{{ order.updated_at|date:"d M Y" }} · {{ order.city }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,229 @@
+{% extends "base/base_seller.html" %}
+{% load static %}
+
+{% block meta %}<title>Settings — Kaam</title>{% endblock %}
+{% block mob_set_active %}active{% endblock %}
+
+{% block dashboard_content %}
+<div class="settings-page">
+
+  <div style="margin-bottom:24px">
+    <div class="eyebrow">Account</div>
+    <h1 style="font-size:26px">Settings</h1>
+  </div>
+
+  {% if messages %}
+  <div class="messages-list">
+    {% for message in messages %}
+    <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- SECTION 1: Store Identity -->
+  <div class="settings-section">
+    <div class="settings-section-header">Store Identity</div>
+    <form method="POST" action="{% url 'settings' %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="profile">
+      <div class="settings-section-body">
+        <div class="input-group">
+          <label class="input-label">Business Name *</label>
+          <input type="text" name="business_name" class="input-field"
+                 value="{{ seller.business_name }}" required>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">Your Store Link</label>
+          <div class="store-link-input">
+            <span class="store-link-prefix">{{ request.get_host }}/</span>
+            <input type="text" name="username" class="input-field"
+                   value="{{ seller.username }}" required minlength="3"
+                   style="border:none;border-radius:0;flex:1"
+                   pattern="[a-zA-Z0-9\-]+" id="username-input">
+          </div>
+          <span class="input-hint">Alphanumeric and hyphens only. Min 3 characters.</span>
+          <p id="username-status" style="font-size: 12px; margin-top: 4px; font-weight: 700; display: none;"></p>
+        </div>
+
+        <div class="alert alert-warning" id="username-warning" style="display:none">
+          ⚠️ <strong>Changing your username will change your store URL.</strong>
+          Update the link in your Instagram bio and WhatsApp DMs after saving.
+        </div>
+
+        <div class="grid-2">
+          <div class="input-group">
+            <label class="input-label">Instagram Link</label>
+            <input type="url" name="instagram_link" class="input-field"
+                   value="{{ seller.instagram_link }}" placeholder="https://instagram.com/yourstore">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Facebook Link</label>
+            <input type="url" name="facebook_link" class="input-field"
+                   value="{{ seller.facebook_link }}" placeholder="https://facebook.com/yourstore">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="input-group">
+            <label class="input-label">WhatsApp Number *</label>
+            <input type="text" name="whatsapp_number" class="input-field"
+                   value="{{ seller.whatsapp_number }}" required placeholder="+91 98765 43210">
+          </div>
+          <div class="input-group">
+            <label class="input-label">UPI ID / VPA</label>
+            <input type="text" name="upi_id" class="input-field"
+                   value="{{ seller.upi_id|default_if_none:'' }}" placeholder="{{ seller.whatsapp_number }}@upi (default)">
+          </div>
+        </div>
+
+        <div class="input-group" style="margin-top:16px">
+          <label class="input-label">Business Category</label>
+          <input type="text" name="category" class="input-field"
+                 value="{{ seller.category }}" placeholder="Clothing, Food, Toys…">
+        </div>
+      </div>
+      <div class="settings-section-footer">
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- SECTION 2: Subscription (read-only) -->
+  <div class="settings-section">
+    <div class="settings-section-header">Subscription Status</div>
+    <div class="settings-section-body">
+      <div class="card-paper">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div>
+            <div class="eyebrow">Status</div>
+            {% if seller.subscription_active %}
+            <div style="display:flex;align-items:center;gap:8px;font-size:16px;font-weight:700;color:var(--kaam-success)">
+              ✅ Active
+            </div>
+            {% else %}
+            <div style="color:var(--kaam-danger);font-weight:700">⚠️ Expired</div>
+            {% endif %}
+          </div>
+          <div>
+            <div class="eyebrow">Plan</div>
+            <div style="font-weight:600">Monthly · ₹999/month</div>
+          </div>
+          {% if seller.subscription_expires %}
+          <div>
+            <div class="eyebrow">Next Renewal</div>
+            <div style="font-weight:600">{{ seller.subscription_expires|date:"d F Y" }}</div>
+          </div>
+          {% endif %}
+        </div>
+        <div style="margin-top:14px;font-size:12px;color:var(--kaam-stone-dark)">
+          To modify your subscription, contact Kaam support.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: Data & Export -->
+  <div class="settings-section">
+    <div class="settings-section-header">Data & Export</div>
+    <div class="settings-section-body">
+      <div style="font-size:13px; color:var(--kaam-stone-dark); margin-bottom:20px">
+        Download your store data for offline analysis or backup.
+      </div>
+      
+      <div class="grid-2">
+        <div class="card-paper" style="padding:20px; border:1px solid var(--kaam-line)">
+          <div style="font-size:11px; font-weight:800; text-transform:uppercase; color:var(--kaam-stone-dark); margin-bottom:8px">Orders List</div>
+          <p style="font-size:13px; margin-bottom:16px; opacity:0.8; color:var(--kaam-soot)">All your order history, buyer details, and payment statuses.</p>
+          <div style="display:flex; gap:10px">
+            <a href="{% url 'export_orders' %}?format=csv" class="btn btn-outline-saffron btn-sm" style="flex:1">Excel (.csv)</a>
+            <a href="{% url 'export_orders' %}?format=json" class="btn btn-ghost btn-sm" style="flex:1">JSON</a>
+          </div>
+        </div>
+        
+        <div class="card-paper" style="padding:20px; border:1px solid var(--kaam-line)">
+          <div style="font-size:11px; font-weight:800; text-transform:uppercase; color:var(--kaam-stone-dark); margin-bottom:8px">Sales Analytics</div>
+          <p style="font-size:13px; margin-bottom:16px; opacity:0.8; color:var(--kaam-soot)">Calculated revenue, order trends, and category performance.</p>
+          <div style="display:flex; gap:10px">
+            <a href="{% url 'export_analytics' %}?format=csv" class="btn btn-outline-saffron btn-sm" style="flex:1">Excel (.csv)</a>
+            <a href="{% url 'export_analytics' %}?format=json" class="btn btn-ghost btn-sm" style="flex:1">JSON</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: Change Password -->
+  <div class="settings-section">
+    <div class="settings-section-header">Change Password</div>
+    <form method="POST" action="{% url 'settings' %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="password">
+      <div class="settings-section-body">
+        <div class="input-group">
+          <label class="input-label">Current Password</label>
+          <input type="password" name="current_password" class="input-field" required autocomplete="current-password">
+        </div>
+        <div class="grid-2">
+          <div class="input-group">
+            <label class="input-label">New Password</label>
+            <input type="password" name="new_password" class="input-field" required minlength="8" autocomplete="new-password">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Confirm New Password</label>
+            <input type="password" name="confirm_password" class="input-field" required autocomplete="new-password">
+          </div>
+        </div>
+      </div>
+      <div class="settings-section-footer">
+        <button type="submit" class="btn btn-ghost">Update Password</button>
+      </div>
+    </form>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block seller_js %}
+<script>
+const usernameInput = document.getElementById('username-input');
+const warning = document.getElementById('username-warning');
+const statusEl = document.getElementById('username-status');
+const original = '{{ seller.username }}'.toLowerCase();
+
+let debounceTimer;
+
+usernameInput?.addEventListener('input', function() {
+  const val = this.value.trim().toLowerCase();
+  
+  // Show URL change warning
+  warning.style.display = val !== original ? 'flex' : 'none';
+  
+  if (!statusEl) return;
+
+  // Handle availability check
+  clearTimeout(debounceTimer);
+  
+  if (!val || val === original) {
+    statusEl.style.display = 'none';
+    return;
+  }
+
+  statusEl.textContent = 'Checking availability...';
+  statusEl.style.color = 'var(--kaam-stone-dark)';
+  statusEl.style.display = 'block';
+
+  debounceTimer = setTimeout(() => {
+    fetch(`/api/check-username/?username=${encodeURIComponent(val)}`)
+      .then(res => res.json())
+      .then(data => {
+        statusEl.textContent = data.message;
+        statusEl.style.color = data.available ? 'var(--kaam-success)' : 'var(--kaam-danger)';
+      })
+      .catch(() => {
+        statusEl.style.display = 'none';
+      });
+  }, 400);
+});
+</script>
+{% endblock %}

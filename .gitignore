@@ -1,0 +1,24 @@
+db.sqlite3
+checklistkaam.md
+kaamimplementation.md
+.env
+
+# --- PYTHON SECURITY & CACHES ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- ENVIRONMENTS ---
+.venv/
+venv/
+ENV/
+env/
+
+# --- USER UPLOADS & MEDIA ---
+media/
+
+# --- OS & EDITOR HIDDEN FILES ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

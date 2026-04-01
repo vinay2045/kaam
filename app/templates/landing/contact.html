@@ -1,0 +1,182 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block meta %}
+<title>Contact Us — Kaam</title>
+<meta name="description" content="Get in touch with the Kaam Commerce team.">
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/landing.css' %}">
+<style>
+  .contact-page {
+    min-height: calc(100vh - 62px);
+    display: flex;
+    flex-direction: column;
+    background-color: var(--kaam-paper);
+    color: var(--kaam-ink);
+  }
+  .contact-main {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 6rem 2rem;
+  }
+  .contact-card {
+    background: var(--kaam-milk);
+    border: 1px solid var(--kaam-stone);
+    border-radius: var(--radius-md, 12px);
+    padding: 3rem;
+    width: 100%;
+    max-width: 600px;
+    box-shadow: var(--shadow-card);
+  }
+  .contact-card h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--kaam-ink);
+    line-height: 1.1;
+  }
+  .contact-card p {
+    color: var(--kaam-stone-dark);
+    margin-bottom: 2.5rem;
+    font-size: 0.95rem;
+  }
+  .contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .form-group label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--kaam-ink);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .form-group input, .form-group textarea {
+    background: var(--kaam-paper);
+    border: 1px solid var(--kaam-stone);
+    border-radius: var(--radius-xs, 6px);
+    padding: 0.8rem 1rem;
+    font-family: inherit;
+    font-size: 1rem;
+    color: var(--kaam-ink);
+    transition: all 0.2s ease;
+  }
+  .form-group input::placeholder, .form-group textarea::placeholder {
+    color: var(--kaam-stone-dark);
+    opacity: 0.7;
+  }
+  .form-group input:focus, .form-group textarea:focus {
+    outline: none;
+    border-color: var(--kaam-saffron-deep);
+  }
+  .form-group textarea {
+    resize: vertical;
+    min-height: 120px;
+  }
+  .contact-btn {
+    align-self: flex-start;
+    padding: 0.8rem 2rem;
+    font-size: 1rem;
+    margin-top: 1rem;
+    background: var(--kaam-ink);
+    color: var(--kaam-milk);
+    border: none;
+    border-radius: var(--radius-xs, 6px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .contact-btn:hover {
+    opacity: 0.8;
+  }
+  
+  /* Messages */
+  .contact-success {
+    background: var(--kaam-success-soft);
+    border: 1px solid var(--kaam-success);
+    padding: 3rem 2rem;
+    border-radius: var(--radius-md, 12px);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+  .contact-success i {
+    font-size: 3.5rem;
+    color: var(--kaam-success);
+  }
+  .contact-success h2 {
+    color: var(--kaam-success);
+    margin: 0;
+  }
+  .contact-success p {
+    color: var(--kaam-success);
+    margin: 0 0 1.5rem 0;
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- NAV -->
+<header class="landing-nav" role="banner">
+  <div class="landing-nav-inner">
+    <a href="/" class="kaam-wordmark">
+      <div class="kaam-wordmark-stamp">
+        <span class="kaam-wordmark-text">kaam</span>
+      </div>
+    </a>
+    <div class="landing-nav-right" style="display:flex;align-items:center;">
+      <a href="/" class="btn btn-ghost btn-sm" style="margin-right:8px;">← Back to Home</a>
+    </div>
+  </div>
+</header>
+
+<div class="contact-page">
+  <main class="contact-main">
+    <div class="contact-card">
+      {% if messages %}
+        <div class="contact-success">
+          <i class="ri-checkbox-circle-fill"></i>
+          <h2>Message Sent!</h2>
+          <p>We've successfully received your inquiry and will be in touch shortly.</p>
+          <a href="/" class="btn btn-primary">Return to Homepage</a>
+        </div>
+      {% else %}
+        <h1>Get in Touch</h1>
+        <p>Have a question or looking to set up an enterprise account? Fill out the form below and our team will get back to you.</p>
+        
+        <form class="contact-form" method="POST" action="{% url 'contact' %}">
+          {% csrf_token %}
+          <div class="form-group">
+            <label for="name">Your Name</label>
+            <input type="text" id="name" name="name" required placeholder="John Doe">
+          </div>
+          <div class="form-group">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" name="email" required placeholder="john@example.com">
+          </div>
+          <div class="form-group">
+            <label for="subject">Subject</label>
+            <input type="text" id="subject" name="subject" required placeholder="How can we help?">
+          </div>
+          <div class="form-group">
+            <label for="message">Message</label>
+            <textarea id="message" name="message" required placeholder="Type your message here..."></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary contact-btn">Send Message <i class="ri-send-plane-fill" style="margin-left:8px;"></i></button>
+        </form>
+      {% endif %}
+    </div>
+  </main>
+</div>
+{% endblock %}

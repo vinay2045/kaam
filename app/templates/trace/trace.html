@@ -1,0 +1,508 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Track Order — Kaam</title>
+  <meta name="description" content="Track your Kaam order. Enter your order ID to see the current delivery status.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/base.css' %}?v={% now 'U' %}">
+  <link rel="stylesheet" href="{% static 'css/components.css' %}?v={% now 'U' %}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/theme-toggles@4.10.1/css/expand.min.css">
+  <script>
+    (function() {
+      var theme = localStorage.getItem('theme');
+      if (!theme) theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+  <style>
+    .trace-page {
+      min-height: 100vh;
+      background: var(--kaam-paper);
+      padding: 40px var(--gap);
+    }
+    .trace-inner {
+      max-width: 560px;
+      margin: 0 auto;
+    }
+    .trace-nav {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 32px;
+    }
+    .trace-back { font-size: 13px; font-weight: 500; color: var(--kaam-stone-dark); transition: color var(--transition-fast); }
+    .trace-back:hover { color: var(--kaam-ink); }
+
+    .trace-search-card {
+      background: var(--kaam-milk);
+      border: 1.5px solid var(--kaam-stone);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+      box-shadow: var(--shadow-card);
+      margin-bottom: 24px;
+    }
+    .trace-title {
+      font-family: var(--font-display);
+      font-size: 26px; font-weight: 700; color: var(--kaam-ink);
+      margin-bottom: 8px;
+    }
+    .trace-sub { font-size: 14px; color: var(--kaam-stone-dark); margin-bottom: 22px; }
+    .trace-input-row { display: flex; gap: 10px; }
+
+    /* TIMELINE */
+    .order-card {
+      background: var(--kaam-milk);
+      border: 1.5px solid var(--kaam-stone);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-lift);
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .order-card-header {
+      padding: 20px 24px;
+      background: var(--kaam-saffron-soft);
+      border-bottom: 1.5px solid var(--kaam-saffron);
+      display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;
+    }
+    .order-card-id {
+      font-family: var(--font-mono); font-size: 13px; color: var(--kaam-saffron-deep);
+      margin-bottom: 4px;
+    }
+    .order-card-buyer { font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--kaam-ink); }
+    .order-card-badge { flex-shrink: 0; }
+
+    .order-timeline { padding: 24px; }
+    .timeline-title {
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--kaam-stone-dark); margin-bottom: 20px;
+    }
+    .timeline-steps { position: relative; }
+    .timeline-line {
+      position: absolute;
+      left: 11px; top: 0; bottom: 0;
+      width: 2px;
+      background: var(--kaam-stone);
+    }
+
+    .timeline-step { display: flex; gap: 14px; position: relative; margin-bottom: 18px; }
+    .timeline-step:last-child { margin-bottom: 0; }
+
+    .step-dot {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      border: 2px solid var(--kaam-stone);
+      background: var(--kaam-milk);
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px;
+      z-index: 1;
+      transition: all 0.3s;
+    }
+    .step-dot.done { background: var(--kaam-leaf); border-color: var(--kaam-leaf); color: white; }
+    .step-dot.current {
+      background: var(--kaam-saffron); border-color: var(--kaam-saffron-deep);
+      box-shadow: 0 0 0 4px rgba(224,161,27,0.2);
+    }
+
+    .step-content { padding-top: 2px; }
+    .step-label {
+      font-size: 14px; font-weight: 600;
+      color: var(--kaam-stone-dark);
+    }
+    .step-label.done { color: var(--kaam-leaf); }
+    .step-label.current { color: var(--kaam-ink); font-weight: 700; }
+
+    /* Items section */
+    .order-items-section {
+      padding: 0 24px 24px;
+      border-top: 1px solid var(--kaam-line);
+    }
+    .order-section-title {
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--kaam-stone-dark); padding-top: 18px; margin-bottom: 12px;
+    }
+
+    /* Feedback form */
+    .feedback-section {
+      padding: 0 24px 24px;
+      border-top: 1px solid var(--kaam-line);
+    }
+    .not-received-section { padding: 0 24px 24px; border-top: 1px solid var(--kaam-line); }
+
+    .star-interactive { display: flex; gap: 6px; margin: 12px 0; }
+    .star-interactive label {
+      font-size: 28px; cursor: pointer; color: var(--kaam-stone);
+      transition: color var(--transition-fast), transform var(--transition-fast);
+    }
+    .star-interactive input[type="radio"] { display: none; }
+    .star-interactive input:checked ~ label,
+    .star-interactive label:hover,
+    .star-interactive label:hover ~ label { color: var(--kaam-saffron); }
+    .star-interactive { flex-direction: row-reverse; }
+    .star-interactive label:hover,
+    .star-interactive label:hover ~ label { transform: scale(1.15); }
+
+    /* Variant Chips */
+    .variant-cards-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--kaam-soot);
+      margin-bottom: 8px;
+    }
+    .variant-cards {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+    .variant-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 7px 16px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--kaam-stone);
+      background: var(--kaam-paper);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--kaam-ink);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .variant-chip:hover:not(:disabled) {
+      border-color: var(--kaam-saffron);
+      background: var(--kaam-saffron-pale);
+      color: var(--kaam-soot);
+    }
+    .variant-chip.selected {
+      border-color: var(--kaam-saffron);
+      background: var(--kaam-saffron-soft);
+      color: var(--kaam-soot);
+      box-shadow: 0 0 0 1.5px var(--kaam-saffron);
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+<div class="trace-page">
+  <div class="trace-inner">
+
+    <div class="trace-nav">
+      <div style="display:flex;align-items:center;flex:1;">
+        <a href="/" class="trace-back">← kaam.com</a>
+      </div>
+      <div class="kaam-wordmark" style="display:flex;justify-content:center;">
+        <div class="kaam-wordmark-stamp">
+          <span class="kaam-wordmark-text">kaam</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;flex:1;justify-content:flex-end;">
+        <button class="theme-toggle" type="button" title="Toggle theme" aria-label="Toggle theme" onclick="toggleTheme()" style="background:transparent;border:none;cursor:pointer;font-size:22px;color:var(--kaam-ink);display:flex;align-items:center">
+          <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="1em" height="1em" fill="currentColor" class="theme-toggle__expand" viewBox="0 0 32 32"><clipPath id="theme-toggle__expand__cutout"><path d="M0-11h25a1 1 0 0017 13v30H0Z" /></clipPath><g clip-path="url(#theme-toggle__expand__cutout)"><circle cx="16" cy="16" r="8.4" /><path d="M18.3 3.2c0 1.3-1 2.3-2.3 2.3s-2.3-1-2.3-2.3S14.7.9 16 .9s2.3 1 2.3 2.3zm-4.6 25.6c0-1.3 1-2.3 2.3-2.3s2.3 1 2.3 2.3-1 2.3-2.3 2.3-2.3-1-2.3-2.3zm15.1-10.5c-1.3 0-2.3-1-2.3-2.3s1-2.3 2.3-2.3 2.3 1 2.3 2.3-1 2.3-2.3 2.3zM3.2 13.7c1.3 0 2.3 1 2.3 2.3s-1 2.3-2.3 2.3S.9 17.3.9 16s1-2.3 2.3-2.3zm5.8-7C9 7.9 7.9 9 6.7 9S4.4 8 4.4 6.7s1-2.3 2.3-2.3S9 5.4 9 6.7zm16.3 21c-1.3 0-2.3-1-2.3-2.3s1-2.3 2.3-2.3 2.3 1 2.3 2.3-1 2.3-2.3 2.3zm2.4-21c0 1.3-1 2.3-2.3 2.3S23 7.9 23 6.7s1-2.3 2.3-2.3 2.4 1 2.4 2.3zM6.7 23C8 23 9 24 9 25.3s-1 2.3-2.3 2.3-2.3-1-2.3-2.3 1-2.3 2.3-2.3z" /></g></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Search form -->
+    <div class="trace-search-card">
+      <h1 class="trace-title">Track Your Order</h1>
+      <p class="trace-sub">Enter the Order ID you received when you placed your order.</p>
+
+      {% if error %}
+      <div class="alert alert-danger" style="margin-bottom:16px">{{ error }}</div>
+      {% endif %}
+
+      {% if messages %}
+      <div id="trace-messages" style="margin-bottom:16px">
+        {% for message in messages %}
+        <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %}" style="transition:opacity 0.5s ease">{{ message }}</div>
+        {% endfor %}
+      </div>
+      <script>
+        setTimeout(function() {
+          var el = document.getElementById('trace-messages');
+          if (el) { el.style.opacity = '0'; setTimeout(function(){ el.remove(); }, 500); }
+        }, 4000);
+      </script>
+      {% endif %}
+
+      <form action="{% url 'trace_order' %}" method="POST">
+        {% csrf_token %}
+        <div class="trace-input-row">
+          <input type="text" name="order_id" class="input-field"
+                 id="trace-order-id"
+                 placeholder="e.g. ORD-20260330-512"
+                 value="{% if order %}{{ order.order_id }}{% endif %}"
+                 autocomplete="off">
+          <button type="submit" class="btn btn-primary" style="white-space:nowrap">Track →</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Order result -->
+    {% if order %}
+    <div class="order-card">
+      <!-- Header -->
+      <div class="order-card-header">
+        <div>
+          <div class="order-card-id">{{ order.order_id }}</div>
+          <div class="order-card-buyer">{{ order.buyer_name }}</div>
+          <div style="font-size:12px;color:var(--kaam-stone-dark);margin-top:4px">
+            {{ order.city }}, {{ order.state }} · {{ order.created_at|date:"d M Y" }}
+          </div>
+        </div>
+        <span class="badge badge-{{ order.status }} order-card-badge" style="font-size:12px">
+          {{ order.get_status_display }}
+        </span>
+      </div>
+
+      <!-- Timeline -->
+      <div class="order-timeline">
+        <div class="timeline-title">Delivery Progress</div>
+        <div class="timeline-steps">
+          <div class="timeline-line"></div>
+          {% for step in timeline %}
+          <div class="timeline-step">
+            <div class="step-dot {{ step.state }}">
+              {% if step.state == 'done' %}✓{% elif step.state == 'current' %}●{% else %}○{% endif %}
+            </div>
+            <div class="step-content">
+              <div class="step-label {{ step.state }}">{{ step.label }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Order items -->
+      <div class="order-items-section">
+        <div class="order-section-title">Items in This Order</div>
+        {% for item in order.items.all %}
+        <div class="order-summary-item">
+          {% if item.product_image_url %}
+          <img src="{{ item.product_image_url }}" alt="{{ item.product_title }}" class="order-summary-img">
+          {% endif %}
+          <div class="order-summary-item-info">
+            <div class="order-summary-item-title">{{ item.product_title }}</div>
+            <div class="order-summary-item-meta">{{ item.selected_size_color }} · Qty {{ item.quantity }}</div>
+          </div>
+          <div style="font-family:var(--font-mono);font-size:14px;color:var(--kaam-soot)">₹{{ item.subtotal }}</div>
+        </div>
+        {% endfor %}
+        <div style="display:flex;justify-content:space-between;padding:14px 0 0;border-top:1.5px solid var(--kaam-ink);font-weight:700">
+          <span>Total</span>
+          <span style="font-family:var(--font-mono)">₹{{ order.total_amount }}</span>
+        </div>
+      </div>
+
+      <!-- Delivery Confirmation & Feedback -->
+      {% if order.status == 'delivered' %}
+        {% if order.is_received is None %}
+        <div class="feedback-section">
+          <div class="order-section-title" style="color:var(--kaam-ink);font-size:14px">Did you receive your order?</div>
+          <div style="margin-top:14px;display:flex;flex-direction:column;gap:16px">
+            <form method="POST" action="{% url 'trace_order_detail' order.order_id %}">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="mark_received">
+              <button type="submit" class="btn btn-primary btn-sm" style="width:100%">Yes, I received it</button>
+            </form>
+            <form method="POST" action="{% url 'trace_order_detail' order.order_id %}">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="not_received">
+              <div style="display:flex;gap:8px">
+                <input type="text" name="reason" class="input-field" placeholder="If no, please type a reason here..." style="font-size:13px;padding:10px 14px" required>
+                <button type="submit" class="btn btn-danger btn-sm" style="white-space:nowrap">Report Issue</button>
+              </div>
+            </form>
+          </div>
+        </div>
+        {% elif order.is_received == False %}
+        <div class="feedback-section">
+          <div class="order-section-title" style="color:var(--kaam-clay)">Issue Reported</div>
+          <p style="font-size:14px;color:var(--kaam-stone-dark);margin-top:8px">You reported that you did not receive this order. We have notified the seller.</p>
+          {% if order.not_received_reason %}
+          <div style="margin-top:12px;padding:12px;background:#FDECEB;border:1px solid #F8B4B4;border-radius:var(--radius-md);font-size:13px;color:var(--kaam-soot);font-style:italic">
+            Reason: "{{ order.not_received_reason }}"
+          </div>
+          {% endif %}
+        </div>
+        {% elif order.is_received == True and order.feedback_stars is None %}
+        <div class="feedback-section">
+          <div class="order-section-title">How was your order?</div>
+          <form method="POST" action="{% url 'trace_order_detail' order.order_id %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="feedback">
+            <div class="star-interactive">
+              <input type="radio" name="stars" id="s5" value="5"><label for="s5">★</label>
+              <input type="radio" name="stars" id="s4" value="4"><label for="s4">★</label>
+              <input type="radio" name="stars" id="s3" value="3"><label for="s3">★</label>
+              <input type="radio" name="stars" id="s2" value="2"><label for="s2">★</label>
+              <input type="radio" name="stars" id="s1" value="1"><label for="s1">★</label>
+            </div>
+            <div class="input-group" style="margin-bottom:14px">
+              <textarea name="feedback_text" class="input-field" rows="3"
+                        placeholder="Tell us about your experience (optional)"></textarea>
+            </div>
+            <div style="display:flex;gap:10px">
+              <button type="submit" class="btn btn-primary btn-sm">Submit Feedback</button>
+            </div>
+          </form>
+        </div>
+        {% elif order.is_received == True and order.feedback_stars %}
+        <div class="feedback-section">
+          <div class="order-section-title">Your Feedback</div>
+          <div style="font-size:18px;color:var(--kaam-saffron)">
+            {% for i in "12345" %}{% if forloop.counter <= order.feedback_stars %}★{% else %}☆{% endif %}{% endfor %}
+          </div>
+          {% if order.feedback_text %}
+          <div style="font-size:14px;color:var(--kaam-soot);margin-top:8px;font-style:italic">"{{ order.feedback_text }}"</div>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        {% if order.is_received == True %}
+        <!-- Returns and Exchanges -->
+        {% if not order.return_status %}
+        <div class="feedback-section" style="margin-top:20px;border-color:var(--kaam-saffron)">
+          <div class="order-section-title" style="color:var(--kaam-ink)">Need an Exchange or Refund?</div>
+          <p style="font-size:13px;color:var(--kaam-stone-dark);margin-bottom:14px">Not satisfied? Select an option below within your return policy window.</p>
+          
+          <div style="display:flex;gap:10px;margin-bottom:14px">
+            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="document.getElementById('refund-form').style.display='block';document.getElementById('exchange-form').style.display='none'"><i class="ri-refund-2-line"></i> Refund</button>
+            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="document.getElementById('exchange-form').style.display='block';document.getElementById('refund-form').style.display='none'"><i class="ri-exchange-box-line"></i> Exchange</button>
+          </div>
+
+          <!-- Refund Form -->
+          <form id="refund-form" method="POST" action="{% url 'trace_order_detail' order.order_id %}" enctype="multipart/form-data" style="display:none;background:var(--kaam-paper);padding:14px;border-radius:var(--radius-md)">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="request_return">
+            <input type="hidden" name="return_type" value="refund">
+            
+            <div class="input-group" style="margin-bottom:12px">
+              <label class="input-label" style="font-size:11px">Reason for Refund</label>
+              <select class="input-field" name="return_reason" required style="font-size:13px">
+                <option value="" disabled selected>Select a reason...</option>
+                <option value="Item Damaged">Item Damaged / Defective</option>
+                <option value="Wrong Item Received">Wrong Item Received</option>
+                <option value="Quality Issue">Quality Issue</option>
+                <option value="Changed my mind">Changed my mind</option>
+              </select>
+            </div>
+            
+            <div class="input-group" style="margin-bottom:12px">
+              <label class="input-label" style="font-size:11px">Explanation</label>
+              <textarea class="input-field" name="return_description" rows="2" placeholder="Briefly explain the issue..." required style="font-size:13px"></textarea>
+            </div>
+            
+            <div class="input-group" style="margin-bottom:12px">
+              <label class="input-label" style="font-size:11px">Proof Image (Required)</label>
+              <input type="file" name="return_proof" class="input-field" accept="image/*" required style="font-size:12px;padding:6px">
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-sm" style="width:100%">Submit Refund Request</button>
+          </form>
+
+          <!-- Exchange Form -->
+          <form id="exchange-form" method="POST" action="{% url 'trace_order_detail' order.order_id %}" enctype="multipart/form-data" style="display:none;background:var(--kaam-paper);padding:14px;border-radius:var(--radius-md)">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="request_return">
+            <input type="hidden" name="return_type" value="exchange">
+            
+            <div class="input-group" style="margin-bottom:12px">
+              <label class="input-label" style="font-size:11px">Reason for Exchange</label>
+              <select class="input-field" name="return_reason" required style="font-size:13px">
+                <option value="" disabled selected>Select a reason...</option>
+                <option value="Wrong Size/Color">Wrong Size/Color Ordered</option>
+                <option value="Item Defective">Item Defective</option>
+                <option value="Received Wrong Item">Received Wrong Item</option>
+              </select>
+            </div>
+
+            <div class="input-group" style="margin-bottom:14px">
+              {% if exchange_options %}
+              <div class="variant-cards-label">Choose variant <span style="color:var(--kaam-danger)">*</span></div>
+              <div class="variant-cards">
+                {% for opt in exchange_options %}
+                <button type="button" class="variant-chip" data-value="{{ opt.value }}" onclick="selectExchangeVariant(this)">
+                  {{ opt.label }}
+                </button>
+                {% endfor %}
+              </div>
+              <input type="hidden" name="return_exchange_variant" id="hidden_exchange_variant" required>
+              {% else %}
+              <label class="input-label" style="font-size:11px">What do you want instead?</label>
+              <input type="text" class="input-field" name="return_exchange_variant" placeholder="e.g., Size L, Black color" required style="font-size:13px">
+              {% endif %}
+            </div>
+            
+            <div class="input-group" style="margin-bottom:12px">
+              <label class="input-label" style="font-size:11px">Explanation</label>
+              <textarea class="input-field" name="return_description" rows="2" placeholder="Tell the seller details..." required style="font-size:13px"></textarea>
+            </div>
+            
+            <div class="input-group" style="margin-bottom:12px">
+              <label class="input-label" style="font-size:11px">Proof Image (Required)</label>
+              <input type="file" name="return_proof" class="input-field" accept="image/*" required style="font-size:12px;padding:6px">
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-sm" style="width:100%">Submit Exchange Request</button>
+          </form>
+        </div>
+        
+        {% else %}
+        <!-- Display Return Status -->
+        <div class="feedback-section" style="margin-top:20px;{% if order.return_status == 'requested' %}border-color:var(--kaam-saffron){% elif order.return_status == 'declined' %}border-color:var(--kaam-danger);background:#FDECEB{% else %}border-color:var(--kaam-success){% endif %}">
+          <div class="order-section-title" style="color:var(--kaam-ink);display:flex;justify-content:space-between;align-items:center">
+            {% if order.return_type == 'exchange' %}Exchange Status{% else %}Refund Status{% endif %}
+            <span class="badge" style="font-size:10px;text-transform:uppercase;{% if order.return_status == 'declined' %}background:rgba(217,45,32,0.1);color:var(--kaam-danger){% elif order.return_status == 'requested' %}background:var(--kaam-saffron-soft);color:var(--kaam-soot){% else %}background:rgba(46,106,79,0.1);color:var(--kaam-success){% endif %}">
+              {{ order.get_return_status_display }}
+            </span>
+          </div>
+          
+          <div style="font-size:13px;color:var(--kaam-soot);margin-top:12px;line-height:1.5">
+            <strong>Reason:</strong> {{ order.return_reason }}<br>
+            {% if order.return_type == 'exchange' %}
+            <strong>Requested Variant:</strong> <span class="mono">{{ order.return_exchange_variant }}</span><br>
+            {% endif %}
+            <strong>Details:</strong> {{ order.return_description }}
+          </div>
+
+          {% if order.return_status == 'declined' %}
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--kaam-line)">
+            <strong style="color:var(--kaam-danger);font-size:12px">Seller Note:</strong>
+            <div style="font-size:13px;color:var(--kaam-danger);font-style:italic">"{{ order.return_declined_reason }}"</div>
+          </div>
+          {% elif order.return_status == 'approved' %}
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--kaam-line)">
+            <strong style="color:var(--kaam-success);font-size:12px">Instructions:</strong>
+            <div style="font-size:13px;color:var(--kaam-stone-dark)">Your request is approved! Please package the item securely and ship it back to the seller, or wait for reverse pickup instructions if provided.</div>
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+        {% endif %}
+
+      {% endif %}
+
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+<script src="{% static 'js/utils.js' %}?v={% now 'U' %}"></script>
+<script>
+  function selectExchangeVariant(btn) {
+    // Deselect siblings
+    btn.parentNode.querySelectorAll('.variant-chip').forEach(c => c.classList.remove('selected'));
+    // Select clicked
+    btn.classList.add('selected');
+    // Update hidden input
+    document.getElementById('hidden_exchange_variant').value = btn.dataset.value;
+  }
+</script>
+</body>
+</html>
