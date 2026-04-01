@@ -327,6 +327,10 @@ def update_order_status(request, order_id):
     order.status = new_status
     if new_status == 'delivered':
         order.is_confirmed = True
+        if order.payment_method == 'cod':
+            order.payment_status = 'paid'
+        elif order.payment_method == 'online' and (order.utr_number or order.payment_screenshot):
+            order.payment_status = 'paid'
     order.save()
 
     status_labels = dict(Order.STATUS_CHOICES)
@@ -576,8 +580,10 @@ def analytics(request):
     orders_this = seller.orders.filter(created_at__gte=period_start)
     orders_prev = seller.orders.filter(created_at__gte=prev_start, created_at__lt=period_start)
 
-    total_revenue = orders_this.filter(status='delivered').aggregate(t=Sum('total_amount'))['t'] or 0
-    prev_revenue = orders_prev.filter(status='delivered').aggregate(t=Sum('total_amount'))['t'] or 0
+    delivered_orders_this = orders_this.filter(status='delivered')
+    delivered_orders_prev = orders_prev.filter(status='delivered')
+    total_revenue = delivered_orders_this.aggregate(t=Sum('total_amount'))['t'] or 0
+    prev_revenue = delivered_orders_prev.aggregate(t=Sum('total_amount'))['t'] or 0
     revenue_change = ((total_revenue - prev_revenue) / prev_revenue * 100) if prev_revenue else 0
 
     total_orders = orders_this.count()
@@ -634,7 +640,7 @@ def analytics(request):
 
     # Category analytics
     from django.db.models import F
-    items_qs = OrderItem.objects.filter(order__seller=seller, order__created_at__gte=period_start)
+    items_qs = OrderItem.objects.filter(order__seller=seller, order__created_at__gte=period_start, order__status='delivered')
     cat_data = {}
     for item in items_qs.select_related('order'):
         key = (item.product_category, item.product_subcategory)
@@ -652,8 +658,9 @@ def analytics(request):
         c['pct'] = round(c['count'] / total_items * 100) if total_items else 0
 
     # Business summary
-    avg_order_value = (total_revenue / total_orders) if total_orders else 0
-    biggest_sale_obj = orders_this.order_by('-total_amount').first()
+    delivered_orders_count = delivered_orders_this.count()
+    avg_order_value = (total_revenue / delivered_orders_count) if delivered_orders_count else 0
+    biggest_sale_obj = delivered_orders_this.order_by('-total_amount').first()
     biggest_sale = biggest_sale_obj.total_amount if biggest_sale_obj else 0
     biggest_sale_date = biggest_sale_obj.created_at.strftime('%d %b %Y') if biggest_sale_obj else '-'
     days_active = max((now - seller.created_at).days, 1)
@@ -661,8 +668,9 @@ def analytics(request):
     daily_earnings = float(all_revenue) / days_active
 
     # Payments
-    online_paid = orders_this.filter(payment_method='online')
-    cod_orders = orders_this.filter(payment_method='cod')
+    payment_orders = delivered_orders_this
+    online_paid = payment_orders.filter(payment_method='online', payment_status='paid')
+    cod_orders = payment_orders.filter(payment_method='cod', payment_status='pending')
     online_paid_count = online_paid.count()
     online_paid_amount = online_paid.aggregate(t=Sum('total_amount'))['t'] or 0
     cod_pending_count = cod_orders.count()
@@ -909,6 +917,7 @@ def storefront(request, username):
         items_data = data.get('items', [])
         payment_method = data.get('payment_method', '')
         utr_number = data.get('utr_number', '')
+        screenshot_file = request.FILES.get('payment_screenshot')
 
         if not items_data:
             return JsonResponse({'success': False, 'error': 'No products selected.'})
@@ -938,9 +947,9 @@ def storefront(request, username):
             pincode=address.get('pincode', ''),
             payment_method=payment_method,
             utr_number=utr_number,
+            payment_status='paid' if (payment_method == 'online' and (utr_number or screenshot_file)) else 'pending',
         )
         
-        screenshot_file = request.FILES.get('payment_screenshot')
         if screenshot_file:
             order.payment_screenshot = screenshot_file
             order.save()
@@ -1396,7 +1405,8 @@ def export_orders(request):
             # Build item string: "1x Title (Variant), 2x Title..."
             item_list = []
             for item in o.items.all():
-                item_list.append(f"{item.quantity}x {item.product_title} ({item.selected_size_color})")
+                product_token = item.product.product_id if item.product else item.product_title
+                item_list.append(f"{item.quantity}x {product_token} ({item.selected_size_color})")
             items_str = " | ".join(item_list)
 
             writer.writerow([
@@ -1487,6 +1497,8 @@ def manual_order_create(request):
     # Order Meta
     status = request.POST.get('status', 'confirmed')
     payment_method = request.POST.get('payment_method', 'cod')
+    utr_number = request.POST.get('utr_number', '').strip()
+    payment_status = 'paid' if (payment_method == 'online' and utr_number) else 'pending'
     
     # Lists of items
     product_ids = request.POST.getlist('product_ids[]')
@@ -1510,6 +1522,8 @@ def manual_order_create(request):
             pincode=pincode,
             status=status,
             payment_method=payment_method,
+            payment_status=payment_status,
+            utr_number=utr_number,
             is_confirmed=True,
             confirmed_at=timezone.now(),
             total_amount=0 # Will update after adding items
@@ -1597,7 +1611,14 @@ def import_orders_csv(request):
                 pin = row.get('Pincode', '').strip()
                 
                 # Meta
-                row_status = row.get('Status', '').strip().lower() or status_fallback.lower()
+                row_status_raw = row.get('Status', '').strip().lower()
+                status_alias = {
+                    'pending': 'confirmed',
+                    'new': 'placed',
+                    'order placed': 'placed',
+                    'out for delivery': 'out_for_delivery',
+                }
+                row_status = status_alias.get(row_status_raw, row_status_raw) or status_fallback.lower()
                 pay_method = row.get('Payment Method', 'COD').lower()
                 utr = row.get('UTR Number', '').strip()
                 total_val = row.get('Total Amount', '0').replace(',', '')
@@ -1638,7 +1659,16 @@ def import_orders_csv(request):
                         pid = match.group(2).strip()
                         variant = match.group(3).strip() if match.group(3) else 'Standard'
                         
-                        product = seller.products.filter(product_id=pid, is_available=True).first()
+                        product = seller.products.filter(product_id__iexact=pid, is_available=True).first()
+                        if not product:
+                            title_matches = seller.products.filter(title__iexact=pid, is_available=True)
+                            title_count = title_matches.count()
+                            if title_count == 1:
+                                product = title_matches.first()
+                            elif title_count > 1:
+                                order_valid = False
+                                skip_details.append(f"Row {idx}: '{pid}' matches multiple products, use Product ID in Items Ordered")
+                                break
                         if not product:
                             order_valid = False
                             skip_details.append(f"Row {idx}: Product ID '{pid}' not found in your store")
@@ -1655,7 +1685,12 @@ def import_orders_csv(request):
                     continue
 
                 conf_col = row.get('Confirmed', '').strip().lower()
-                is_confirmed = (conf_col == 'yes') or (row_status in ['confirmed', 'packed', 'shipped', 'delivered'])
+                is_confirmed_from_col = conf_col in ['yes', 'true', '1', 'y']
+                valid_statuses = ['placed', 'confirmed', 'packed', 'shipped', 'out_for_delivery', 'delivered']
+                row_status = row_status if row_status in valid_statuses else status_fallback.lower()
+                status_implies_confirmed = row_status in ['confirmed', 'packed', 'shipped', 'out_for_delivery', 'delivered']
+                is_confirmed = is_confirmed_from_col or status_implies_confirmed
+                payment_status = 'paid' if ('online' in pay_method and utr) else 'pending'
                 
                 create_kwargs = {
                     'seller': seller,
@@ -1668,8 +1703,9 @@ def import_orders_csv(request):
                     'city': city,
                     'state': state,
                     'pincode': pin,
-                    'status': row_status if row_status in ['placed', 'confirmed', 'packed', 'shipped', 'delivered', 'cancelled', 'returned'] else 'placed',
+                    'status': row_status,
                     'payment_method': 'online' if 'online' in pay_method else 'cod',
+                    'payment_status': payment_status,
                     'utr_number': utr,
                     'is_confirmed': is_confirmed,
                     'confirmed_at': timezone.now() if is_confirmed else None,

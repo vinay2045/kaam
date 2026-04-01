@@ -397,7 +397,7 @@
                   <div class="expand-section-title">Payment</div>
                   <div style="font-size:13px;line-height:2">
                     Method: <span class="badge {{ order.payment_method|payment_badge_class }}">{{ order.get_payment_method_display }}</span><br>
-                    Status: <strong>{{ order.payment_status|title }}</strong><br>
+                    Payment Status: <strong>{{ order.payment_status|title }}</strong><br>
                     {% if order.utr_number %}
                     UTR: <span class="mono" style="font-size:12px">{{ order.utr_number }}</span>
                     {% endif %}
