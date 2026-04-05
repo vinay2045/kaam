@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Seller Variants</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 2rem;
+            display: flex;
+            gap: 2rem;
+            min-height: 100vh;
+        }
+        .container {
+            flex: 1;
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h2 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        .subtitle {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 1rem;
+        }
+        textarea {
+            width: 100%;
+            height: 300px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1rem;
+            resize: vertical;
+            line-height: 1.5;
+            background: #fafafa;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #4CAF50;
+            background: white;
+        }
+        .cards-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .card {
+            background: #fff;
+            border: 2px solid #4CAF50;
+            border-radius: 10px; /* Requested border-radius */
+            padding: 10px 20px; /* Requested padding */
+            color: #333;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .card:hover {
+            background: #4CAF50;
+            color: white;
+            transform: translateY(-2px);
+        }
+        .card:active {
+            transform: translateY(0);
+        }
+        .card.disabled {
+            border-color: #ccc;
+            background: #eee;
+            color: #999;
+            cursor: not-allowed;
+            transform: none;
+            text-decoration: line-through;
+        }
+        .no-variants {
+            color: #888;
+            font-style: italic;
+        }
+        .examples {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #e8f4f8;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #02506e;
+        }
+        .examples strong { color: #000; }
+        .buy-action {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #fff3cd;
+            color: #856404;
+            border-radius: 8px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Seller Section -->
+    <div class="container">
+        <h2>Seller Panel (Input)</h2>
+        <p class="subtitle">Type your stocks dynamically. Everything updates instantly!</p>
+        
+        <textarea id="sellerInput" placeholder="Leave blank if no options (like a ladder)..."></textarea>
+        
+        <div class="examples">
+            <strong>Try typing these examples:</strong><br><br>
+            <em>Shirts:</em><br>
+            Green : small(40), medium(5)<br>
+            Red : 42cm(10), 36cm(5)<br><br>
+            <em>Lipsticks:</em><br>
+            Red : 10<br>
+            Purple: 20<br><br>
+            <em>Pickles:</em><br>
+            Mango: 500grams(10), 1000grams(20)
+        </div>
+    </div>
+
+    <!-- Buyer Section -->
+    <div class="container">
+        <h2>Buyer View (Live UI)</h2>
+        <p class="subtitle">Click a card to simulate buying. It updates the seller's stock!</p>
+        
+        <div id="buyerCards" class="cards-grid">
+            <div class="no-variants">Type something on the left to generate cards...</div>
+        </div>
+
+        <div id="buyActionLog" class="buy-action"></div>
+    </div>
+
+    <script>
+        const sellerInput = document.getElementById('sellerInput');
+        const buyerCards = document.getElementById('buyerCards');
+        const buyActionLog = document.getElementById('buyActionLog');
+
+        // Initial Data Structure
+        let parsedLines = []; // To store the exact line-by-line structure to recreate it later
+
+        // 1. Helper: Format the display text (Capitalize, add "Size" if needed)
+        function formatCardText(category, variant, stock) {
+            let catClean = category.trim();
+            // Capitalize first letter of category
+            catClean = catClean.charAt(0).toUpperCase() + catClean.slice(1);
+
+            if (!variant) {
+                return `${catClean} - ${stock} stocks`;
+            }
+
+            let varClean = variant.trim();
+            let varLower = varClean.toLowerCase();
+            
+            // Capitalize first letter of variant
+            varClean = varClean.charAt(0).toUpperCase() + varClean.slice(1);
+
+            // Add "Size" if it's a known size format
+            const sizeKeywords = ['small', 'medium', 'large', 'xl', 'xxl'];
+            if (sizeKeywords.includes(varLower) || varLower.endsWith('cm')) {
+                varClean += " Size";
+            }
+
+            return `${catClean} - ${varClean} - ${stock} stocks`;
+        }
+
+        // 2. Parser: Convert Textarea string -> JS Objects
+        function parseSellerText(text) {
+            const lines = text.split('\n');
+            parsedLines = []; // Reset parsed lines
+            let variantsToRender = [];
+
+            lines.forEach((line, lineIndex) => {
+                const trimmedLine = line.trim();
+                
+                // Keep empty lines intact in memory
+                if (!trimmedLine) {
+                    parsedLines.push({ type: 'empty', original: line });
+                    return;
+                }
+
+                // Look for Category: Data separator
+                const parts = line.split(':');
+                if (parts.length < 2) {
+                    // Invalid format or pure text (like ladder description)
+                    parsedLines.push({ type: 'text', original: line });
+                    return;
+                }
+
+                const category = parts[0];
+                const rightSide = parts.slice(1).join(':').trim();
+
+                // Edge Case A: Only category and stock (e.g., Red : 10)
+                // Remove spaces and check if it's purely a number
+                const rightSideNoSpaces = rightSide.replace(/\s/g, '');
+                if (/^-?\d+$/.test(rightSideNoSpaces)) {
+                    let stock = parseInt(rightSideNoSpaces, 10);
+                    stock = Math.max(0, stock); // Handle negative stocks
+
+                    const item = {
+                        id: `line-${lineIndex}-opt-0`,
+                        category: category,
+                        variant: null,
+                        stock: stock,
+                        lineIndex: lineIndex,
+                        optIndex: 0
+                    };
+                    
+                    variantsToRender.push(item);
+                    parsedLines.push({ type: 'single', category, item });
+                    return;
+                }
+
+                // Edge Case B: Comma separated variants with brackets (e.g., small(40), medium(5))
+                const options = rightSide.split(',');
+                let lineItems = [];
+                
+                options.forEach((optStr, optIndex) => {
+                    const cleanOpt = optStr.trim();
+                    if (!cleanOpt) return;
+
+                    // Match something like "small(40)" or "500grams (10)"
+                    // Group 1: variant name, Group 2: stock number
+                    const match = cleanOpt.match(/^(.*?)(?:\(\s*(-?\d+)\s*\))?$/);
+                    
+                    if (match) {
+                        let variantName = match[1].trim();
+                        // If no brackets provided but there is text, assume 0 stock or maybe it's invalid
+                        let stock = match[2] !== undefined ? parseInt(match[2], 10) : 0;
+                        stock = Math.max(0, stock); // Fix negative stocks
+
+                        const item = {
+                            id: `line-${lineIndex}-opt-${optIndex}`,
+                            category: category,
+                            variant: variantName,
+                            stock: stock,
+                            lineIndex: lineIndex,
+                            optIndex: optIndex
+                        };
+                        lineItems.push(item);
+                        variantsToRender.push(item);
+                    }
+                });
+
+                if (lineItems.length > 0) {
+                    parsedLines.push({ type: 'multiple', category, items: lineItems });
+                } else {
+                    parsedLines.push({ type: 'text', original: line });
+                }
+            });
+
+            return variantsToRender;
+        }
+
+        // 3. UI Generator: Create Buttons from Objects
+        function renderCards(variants) {
+            buyerCards.innerHTML = ''; // Clear existing
+            buyActionLog.style.display = 'none';
+
+            if (variants.length === 0) {
+                // E.g., Ladder with blank text box
+                buyerCards.innerHTML = '<div class="no-variants">No specific sizes/colors available. (Standard Item)</div>';
+                return;
+            }
+
+            variants.forEach(v => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                if (v.stock === 0) card.classList.add('disabled');
+                
+                card.innerText = formatCardText(v.category, v.variant, v.stock);
+
+                // Add Buy Click Event
+                card.onclick = () => {
+                    if (v.stock > 0) {
+                        buyItem(v);
+                    }
+                };
+
+                buyerCards.appendChild(card);
+            });
+        }
+
+        // 4. Action: Buyer clicks to buy
+        function buyItem(clickedItem) {
+            // Log action
+            buyActionLog.innerText = `Success! You bought: ${formatCardText(clickedItem.category, clickedItem.variant, 1).replace(' - 1 stocks', '')}`;
+            buyActionLog.style.display = 'block';
+
+            // Find item in parsed structure and reduce stock
+            let found = false;
+            for (let lineObj of parsedLines) {
+                if (lineObj.type === 'single' && lineObj.item.id === clickedItem.id) {
+                    lineObj.item.stock--;
+                    found = true;
+                    break;
+                }
+                if (lineObj.type === 'multiple') {
+                    for (let itm of lineObj.items) {
+                        if (itm.id === clickedItem.id) {
+                            itm.stock--;
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                if (found) break;
+            }
+
+            if (found) {
+                rebuildSellerText(); // Re-generate the textarea
+                const newVariants = parseSellerText(sellerInput.value); // Re-parse
+                renderCards(newVariants); // Re-render
+            }
+        }
+
+        // 5. Rebuilder: Convert JS Objects back to string (Updating the Textarea)
+        function rebuildSellerText() {
+            let newLines = [];
+            
+            parsedLines.forEach(lineObj => {
+                if (lineObj.type === 'empty' || lineObj.type === 'text') {
+                    newLines.push(lineObj.original);
+                } 
+                else if (lineObj.type === 'single') {
+                    // Restore original spacing around colon if possible, but keep it clean
+                    newLines.push(`${lineObj.category}: ${lineObj.item.stock}`);
+                }
+                else if (lineObj.type === 'multiple') {
+                    let optionsText = lineObj.items.map(itm => `${itm.variant}(${itm.stock})`).join(', ');
+                    newLines.push(`${lineObj.category}: ${optionsText}`);
+                }
+            });
+
+            // Update the textarea silently without triggering its own input event
+            sellerInput.value = newLines.join('\n');
+        }
+
+        // 6. Listeners
+        sellerInput.addEventListener('input', () => {
+            const variants = parseSellerText(sellerInput.value);
+            renderCards(variants);
+        });
+
+        // Set initial test data
+        sellerInput.value = `Green : small(40), medium(5)\nRed: small(2), medium(10), large(20)\n\nMango: 500grams(10), 1000grams(20)\n\nPurple: 20\nBlack : 0`;
+        // Trigger initial render
+        const initialVariants = parseSellerText(sellerInput.value);
+        renderCards(initialVariants);
+
+    </script>
+</body>
+</html>
