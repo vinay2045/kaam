@@ -1,5 +1,7 @@
 import json
 from datetime import timedelta, date
+from decimal import Decimal
+import threading
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -36,6 +38,23 @@ def get_unread_count(request):
     if not hasattr(request, '_unread_count_cache'):
         request._unread_count_cache = seller.notifications.filter(is_read=False).count()
     return request._unread_count_cache
+
+
+def send_order_email_async(subject, message, buyer_email):
+    def _worker():
+        try:
+            from django.core.mail import send_mail
+            import os
+            send_mail(
+                subject,
+                message,
+                os.environ.get('DEFAULT_FROM_EMAIL', 'orders@kaam.app'),
+                [buyer_email],
+                fail_silently=True,
+            )
+        except Exception as e:
+            print(f"Failed to send email: {e}")
+    threading.Thread(target=_worker, daemon=True).start()
 
 def require_seller(view_func):
     def wrapper(request, *args, **kwargs):
@@ -179,16 +198,19 @@ def dashboard(request):
 
     # OPTIMIZATION: Combine multiple DB counts/sums into a single TRIP
     stats = all_orders.aggregate(
-        monthly_revenue=Sum('total_amount', filter=Q(status__iexact='delivered', created_at__gte=month_start) & ~Q(return_status='refunded')),
+        monthly_revenue_delivered=Sum('total_amount', filter=Q(status__iexact='delivered', created_at__gte=month_start)),
+        monthly_refunded=Sum('return_refund_amount', filter=Q(return_status='refunded', updated_at__gte=month_start)),
         monthly_orders_count=Count('id', filter=Q(created_at__gte=month_start)),
+        confirmed_count=Count('id', filter=Q(status__iexact='confirmed')),
         packed_count=Count('id', filter=Q(status__iexact='packed')),
         shipped_count=Count('id', filter=Q(status__iexact='shipped')),
         out_count=Count('id', filter=Q(status__iexact='out_for_delivery')),
         delivered_count=Count('id', filter=Q(status__iexact='delivered'))
     )
 
-    monthly_revenue = stats['monthly_revenue'] or 0
+    monthly_revenue = (stats['monthly_revenue_delivered'] or 0) - (stats['monthly_refunded'] or 0)
     monthly_orders = stats['monthly_orders_count'] or 0
+    confirmed_count = stats['confirmed_count'] or 0
     packed_count = stats['packed_count'] or 0
     shipped_count = stats['shipped_count'] or 0
     out_count = stats['out_count'] or 0
@@ -225,6 +247,7 @@ def dashboard(request):
         'stats': {
             'monthly_revenue': monthly_revenue,
             'monthly_orders': monthly_orders,
+            'confirmed': confirmed_count,
             'packed': packed_count,
             'shipped': shipped_count,
             'out_for_delivery': out_count,
@@ -327,10 +350,8 @@ def update_order_status(request, order_id):
     order.status = new_status
     if new_status == 'delivered':
         order.is_confirmed = True
-        if order.payment_method == 'cod':
-            order.payment_status = 'paid'
-        elif order.payment_method == 'online' and (order.utr_number or order.payment_screenshot):
-            order.payment_status = 'paid'
+        # Delivered orders should be treated as paid in dashboard/completed flows.
+        order.payment_status = 'paid'
     order.save()
 
     status_labels = dict(Order.STATUS_CHOICES)
@@ -357,17 +378,28 @@ def update_return_status(request, order_id):
         order.return_declined_reason = note
     elif action == 'refunded':
         order.return_status = 'refunded'
+        if not order.return_refund_amount or order.return_refund_amount <= 0:
+            order.return_refund_amount = order.total_amount
     elif action == 'exchanged':
         order.return_status = 'exchanged'
         order.status = 'confirmed' # Push back to pending
 
-        # Update order details with the new selected variant
+        # Update order item variants from saved exchange map
         if order.return_exchange_variant:
-            item = order.items.first()
-            if item:
-                new_var = order.return_exchange_variant.split('—')[-1].strip() if '—' in order.return_exchange_variant else order.return_exchange_variant
-                item.selected_size_color = new_var + " (Exchange Replacement)"
-                item.save()
+            try:
+                variant_map = json.loads(order.return_exchange_variant)
+                if isinstance(variant_map, dict):
+                    for item in order.items.filter(id__in=variant_map.keys()):
+                        new_var = (variant_map.get(str(item.id)) or '').strip()
+                        if new_var:
+                            item.selected_size_color = f"{new_var} (Exchange Replacement)"
+                            item.save(update_fields=['selected_size_color'])
+            except Exception:
+                item = order.items.first()
+                if item:
+                    new_var = order.return_exchange_variant.split('—')[-1].strip() if '—' in order.return_exchange_variant else order.return_exchange_variant
+                    item.selected_size_color = new_var + " (Exchange Replacement)"
+                    item.save()
     else:
         return JsonResponse({'success': False, 'error': 'Invalid status'})
         
@@ -397,7 +429,34 @@ def product_list(request):
     page = int(request.GET.get('page', 1))
     per_page = 20
     total = products.count()
-    products = products[(page - 1) * per_page: page * per_page]
+    products = list(products[(page - 1) * per_page: page * per_page])
+    for product in products:
+        parsed_variants = []
+        try:
+            raw_variants = json.loads(product.variants_json or '[]')
+        except Exception:
+            raw_variants = []
+        if isinstance(raw_variants, list):
+            for variant in raw_variants:
+                if not isinstance(variant, dict):
+                    continue
+                label = (variant.get('label') or 'Default').strip()
+                try:
+                    stock = int(variant.get('stock', 0))
+                except (TypeError, ValueError):
+                    stock = 0
+                try:
+                    amount = float(variant.get('price', product.price))
+                except (TypeError, ValueError):
+                    amount = float(product.price)
+                parsed_variants.append({
+                    'label': label,
+                    'stock': stock,
+                    'amount': amount,
+                    'in_stock': stock > 0 and product.is_available,
+                })
+        product.variant_preview = parsed_variants[:4]
+        product.variant_preview_more = max(0, len(parsed_variants) - len(product.variant_preview))
 
     context = {
         'seller': seller,
@@ -582,8 +641,12 @@ def analytics(request):
 
     delivered_orders_this = orders_this.filter(status='delivered')
     delivered_orders_prev = orders_prev.filter(status='delivered')
-    total_revenue = delivered_orders_this.aggregate(t=Sum('total_amount'))['t'] or 0
-    prev_revenue = delivered_orders_prev.aggregate(t=Sum('total_amount'))['t'] or 0
+    delivered_revenue_this = delivered_orders_this.aggregate(t=Sum('total_amount'))['t'] or 0
+    delivered_revenue_prev = delivered_orders_prev.aggregate(t=Sum('total_amount'))['t'] or 0
+    refunded_this = orders_this.filter(return_status='refunded').aggregate(t=Sum('return_refund_amount'))['t'] or 0
+    refunded_prev = orders_prev.filter(return_status='refunded').aggregate(t=Sum('return_refund_amount'))['t'] or 0
+    total_revenue = delivered_revenue_this - refunded_this
+    prev_revenue = delivered_revenue_prev - refunded_prev
     revenue_change = ((total_revenue - prev_revenue) / prev_revenue * 100) if prev_revenue else 0
 
     total_orders = orders_this.count()
@@ -664,7 +727,9 @@ def analytics(request):
     biggest_sale = biggest_sale_obj.total_amount if biggest_sale_obj else 0
     biggest_sale_date = biggest_sale_obj.created_at.strftime('%d %b %Y') if biggest_sale_obj else '-'
     days_active = max((now - seller.created_at).days, 1)
-    all_revenue = seller.orders.filter(status='delivered').aggregate(t=Sum('total_amount'))['t'] or 0
+    all_delivered_revenue = seller.orders.filter(status='delivered').aggregate(t=Sum('total_amount'))['t'] or 0
+    all_refunded_revenue = seller.orders.filter(return_status='refunded').aggregate(t=Sum('return_refund_amount'))['t'] or 0
+    all_revenue = all_delivered_revenue - all_refunded_revenue
     daily_earnings = float(all_revenue) / days_active
 
     # Payments
@@ -830,6 +895,13 @@ def seller_settings(request):
                 from django.contrib.auth import update_session_auth_hash
                 update_session_auth_hash(request, user)
                 messages.success(request, 'Password updated successfully.')
+        elif action == 'commerce':
+            seller.allow_online_payment = 'on' in request.POST.getlist('allow_online_payment')
+            seller.allow_cod = 'on' in request.POST.getlist('allow_cod')
+            seller.allow_refunds = 'on' in request.POST.getlist('allow_refunds')
+            seller.allow_exchanges = 'on' in request.POST.getlist('allow_exchanges')
+            seller.save(update_fields=['allow_online_payment', 'allow_cod', 'allow_refunds', 'allow_exchanges'])
+            messages.success(request, 'Commerce settings updated successfully.')
 
     context = {
         'seller': seller,
@@ -923,6 +995,10 @@ def storefront(request, username):
             return JsonResponse({'success': False, 'error': 'No products selected.'})
         if payment_method not in ['cod', 'online']:
             return JsonResponse({'success': False, 'error': 'Invalid payment method.'})
+        if payment_method == 'online' and not seller.allow_online_payment:
+            return JsonResponse({'success': False, 'error': 'Online payment is not available for this store.'})
+        if payment_method == 'cod' and not seller.allow_cod:
+            return JsonResponse({'success': False, 'error': 'Cash on Delivery is not available for this store.'})
 
         # Duplicate check: same buyer + seller in last 60 seconds
         recent = Order.objects.filter(
@@ -964,7 +1040,30 @@ def storefront(request, username):
             qty = max(1, int(item_data.get('qty', 1)))
             size_color = item_data.get('size_color', '')
             variant_label = item_data.get('variant_label', size_color)
+            unit_price = Decimal(str(product.price))
             image_url = product.image.url if product.image else ''
+
+            matched_variant = None
+            if product.variants_json and product.variants_json != '[]' and variant_label:
+                try:
+                    variants = json.loads(product.variants_json)
+                    for v in variants:
+                        if v.get('label') == variant_label:
+                            matched_variant = v
+                            break
+                    if matched_variant:
+                        v_stock = int(matched_variant.get('stock', 0))
+                        if qty > v_stock:
+                            return JsonResponse({
+                                'success': False,
+                                'error': f'Only {v_stock} units left for {variant_label}.'
+                            })
+                        v_price = matched_variant.get('price')
+                        if v_price is not None:
+                            unit_price = Decimal(str(v_price))
+                except Exception:
+                    matched_variant = None
+
             item = OrderItem(
                 order=order,
                 product=product,
@@ -974,14 +1073,14 @@ def storefront(request, username):
                 product_subcategory=product.subcategory,
                 selected_size_color=variant_label or size_color,
                 quantity=qty,
-                unit_price=product.price,
-                subtotal=product.price * qty,
+                unit_price=unit_price,
+                subtotal=unit_price * qty,
             )
             item.save()
-            total += float(product.price) * qty
+            total += float(unit_price) * qty
 
             # Decrement stock for the chosen variant
-            if product.variants_json and product.variants_json != '[]':
+            if product.variants_json and product.variants_json != '[]' and matched_variant is not None:
                 try:
                     variants = json.loads(product.variants_json)
                     for v in variants:
@@ -1006,8 +1105,6 @@ def storefront(request, username):
         # Send Real-Time Email to Buyer (if email provided)
         buyer_email = order.buyer_email
         if buyer_email:
-            from django.core.mail import send_mail
-            
             subject = f"Order Confirmed: #{order.order_id} - {seller.business_name}"
             
             # Construct a dynamic tracking URL based on current host
@@ -1030,18 +1127,8 @@ def storefront(request, username):
                 f"Powered by Kaam Commerce"
             )
             
-            # In production, ensure EMAIL_BACKEND and SMTP are configured in settings.py
-            try:
-                import os
-                send_mail(
-                    subject,
-                    message,
-                    os.environ.get('DEFAULT_FROM_EMAIL', 'orders@kaam.app'),
-                    [buyer_email],
-                    fail_silently=True,
-                )
-            except Exception as e:
-                print(f"Failed to send email: {e}")
+            # Avoid blocking checkout response while sending email
+            send_order_email_async(subject, message, buyer_email)
 
 
         return JsonResponse({'success': True, 'order_id': order.order_id})
@@ -1145,10 +1232,45 @@ def trace_order_detail(request, order_id):
         elif action == 'request_return' and order.status == 'delivered' and order.is_received == True:
             r_type = request.POST.get('return_type')
             if r_type in ['refund', 'exchange'] and not order.return_status:
+                if r_type == 'refund' and not order.seller.allow_refunds:
+                    messages.error(request, 'Refund requests are disabled for this store.')
+                    return redirect('trace_order_detail', order_id=order_id)
+                if r_type == 'exchange' and not order.seller.allow_exchanges:
+                    messages.error(request, 'Exchange requests are disabled for this store.')
+                    return redirect('trace_order_detail', order_id=order_id)
+
+                selected_item_ids = request.POST.getlist('return_item_ids')
+                selected_items = order.items.filter(id__in=selected_item_ids) if selected_item_ids else order.items.all()
+                if not selected_items.exists():
+                    messages.error(request, 'Please select at least one item.')
+                    return redirect('trace_order_detail', order_id=order_id)
+
+                selected_payload = []
+                refund_amount = Decimal('0')
+                for item in selected_items:
+                    selected_payload.append({
+                        'item_id': str(item.id),
+                        'title': item.product_title,
+                        'qty': item.quantity,
+                        'variant': item.selected_size_color,
+                        'subtotal': float(item.subtotal),
+                    })
+                    refund_amount += item.subtotal
+
                 order.return_type = r_type
                 order.return_reason = request.POST.get('return_reason', '')
                 order.return_description = request.POST.get('return_description', '')
-                order.return_exchange_variant = request.POST.get('return_exchange_variant', '')
+                order.return_items_json = json.dumps(selected_payload)
+                order.return_refund_amount = refund_amount if r_type == 'refund' else Decimal('0')
+
+                if r_type == 'exchange':
+                    variant_map_raw = request.POST.get('return_exchange_variant_map', '').strip()
+                    if variant_map_raw:
+                        order.return_exchange_variant = variant_map_raw
+                    else:
+                        order.return_exchange_variant = request.POST.get('return_exchange_variant', '')
+                else:
+                    order.return_exchange_variant = ''
                 proof = request.FILES.get('return_proof')
                 if proof:
                     order.return_proof_image = proof
@@ -1183,6 +1305,7 @@ def trace_order_detail(request, order_id):
     if order and getattr(order, 'items', None):
         import json
         for item in order.items.all():
+            item_options = []
             if item.product and getattr(item.product, 'variants_json', None):
                 try:
                     variants = json.loads(item.product.variants_json)
@@ -1203,14 +1326,18 @@ def trace_order_detail(request, order_id):
                                 
                             if stock > 0:
                                 opt_text = f"{item.product.title} — {label}"
-                                # Only add if we don't have this exact label yet (simple deduplication)
-                                if not any(o['value'] == opt_text for o in exchange_options):
-                                    exchange_options.append({
-                                        'value': opt_text,
-                                        'label': f"{opt_text} ({int(stock)} left)"
-                                    })
+                                item_options.append({
+                                    'value': opt_text,
+                                    'label': f"{opt_text} ({int(stock)} left)"
+                                })
                 except Exception:
                     pass
+            exchange_options.append({
+                'item_id': str(item.id),
+                'item_title': item.product_title,
+                'current_variant': item.selected_size_color,
+                'options': item_options,
+            })
 
     context = {
         'order': order,
@@ -1232,9 +1359,13 @@ def api_realtime_analytics(request):
     all_orders = seller.orders.all()
     new_orders = all_orders.filter(status='placed', is_confirmed=False)
 
-    monthly_revenue = all_orders.filter(
+    monthly_revenue_delivered = all_orders.filter(
         status='delivered', created_at__gte=month_start
     ).aggregate(t=Sum('total_amount'))['t'] or 0
+    monthly_refunded = all_orders.filter(
+        return_status='refunded', updated_at__gte=month_start
+    ).aggregate(t=Sum('return_refund_amount'))['t'] or 0
+    monthly_revenue = monthly_revenue_delivered - monthly_refunded
     monthly_orders = all_orders.filter(created_at__gte=month_start).count()
 
     latest = new_orders.order_by('-created_at').first()
@@ -1245,6 +1376,7 @@ def api_realtime_analytics(request):
         'monthly_revenue': float(monthly_revenue),
         'monthly_orders': monthly_orders,
         'packed': all_orders.filter(status__iexact='packed').count(),
+        'confirmed': all_orders.filter(status__iexact='confirmed').count(),
         'shipped': all_orders.filter(status__iexact='shipped').count(),
         'out_for_delivery': all_orders.filter(status__iexact='out_for_delivery').count(),
         'delivered': all_orders.filter(status__iexact='delivered').count(),
@@ -1498,11 +1630,12 @@ def manual_order_create(request):
     status = request.POST.get('status', 'confirmed')
     payment_method = request.POST.get('payment_method', 'cod').strip().lower()
     utr_number = request.POST.get('utr_number', '').strip()
-    payment_status = 'paid' if ((payment_method == 'online' and utr_number) or (payment_method == 'cod' and status == 'delivered')) else 'pending'
+    payment_status = 'paid' if status == 'delivered' or (payment_method == 'online' and utr_number) else 'pending'
     
     # Lists of items
     product_ids = request.POST.getlist('product_ids[]')
     variant_names = request.POST.getlist('variant_names[]')
+    variant_prices = request.POST.getlist('variant_prices[]')
     quantities = request.POST.getlist('quantities[]')
 
     if not all([name, whatsapp, address, city, pincode, product_ids]):
@@ -1535,9 +1668,14 @@ def manual_order_create(request):
             pid = product_ids[i]
             v_name = variant_names[i] if i < len(variant_names) else 'Standard'
             qty = int(quantities[i]) if i < len(quantities) else 1
+            variant_price = variant_prices[i] if i < len(variant_prices) else ''
             
             product = Product.objects.get(id=pid, seller=seller)
-            subtotal = product.price * qty
+            try:
+                unit_price = Decimal(str(variant_price)) if variant_price != '' else product.price
+            except Exception:
+                unit_price = product.price
+            subtotal = unit_price * qty
             
             OrderItem.objects.create(
                 order=order,
@@ -1548,7 +1686,7 @@ def manual_order_create(request):
                 product_subcategory=product.subcategory,
                 selected_size_color=v_name,
                 quantity=qty,
-                unit_price=product.price,
+                unit_price=unit_price,
                 subtotal=subtotal
             )
             total_order_amount += subtotal
@@ -1557,7 +1695,7 @@ def manual_order_create(request):
         order.total_amount = total_order_amount
         order.save()
         
-        messages.success(request, f"Manual Order {order_id} recorded successfully (Total: ₹{total_order_amount})")
+        messages.success(request, f"Manual Order {order.order_id} recorded successfully (Total: ₹{total_order_amount})")
     except Exception as e:
         messages.error(request, f"Error creating manual order: {str(e)}")
 
@@ -1691,7 +1829,7 @@ def import_orders_csv(request):
                 status_implies_confirmed = row_status in ['confirmed', 'packed', 'shipped', 'out_for_delivery', 'delivered']
                 is_confirmed = is_confirmed_from_col or status_implies_confirmed
                 payment_method_value = 'online' if 'online' in pay_method else 'cod'
-                payment_status = 'paid' if ((payment_method_value == 'online' and utr) or (payment_method_value == 'cod' and row_status == 'delivered')) else 'pending'
+                payment_status = 'paid' if row_status == 'delivered' or (payment_method_value == 'online' and utr) else 'pending'
                 
                 create_kwargs = {
                     'seller': seller,

@@ -4,6 +4,7 @@
 ═══════════════════════════════════════════════ */
 
 let currentStep = 0;
+let isSubmitting = false;
 let orderData = {
   buyer_name: '', buyer_email: '', buyer_whatsapp: '', buyer_instagram: '',
   country: 'India', address_line1: '', address_line2: '', city: '', state: '', pincode: '',
@@ -15,6 +16,7 @@ let orderData = {
 const steps = document.querySelectorAll('.sf-step');
 const progressFill = document.getElementById('sf-progress-fill');
 const stepCounter = document.getElementById('sf-step-counter');
+const PERSIST_KEY = 'kaam-buyer-profile-v1';
 
 function showStep(n) {
   if (n < 0 || n >= steps.length) return;
@@ -99,6 +101,9 @@ function collectStepData(step) {
     orderData.city         = document.getElementById('city')?.value.trim() || '';
     orderData.state        = document.getElementById('state')?.value.trim() || '';
     orderData.pincode      = document.getElementById('pincode')?.value.trim() || '';
+  }
+  if (step === 1 || step === 2 || step === 3) {
+    savePersistentBuyerData();
   }
   if (step === 4) {
     const sel = document.querySelector('.payment-ticket.selected');
@@ -219,9 +224,10 @@ function addProductInputRow(productId) {
       } else {
         variantSection = `
           <input type="hidden" class="selected-variant-input" id="selected-variant-${rowId}" value="Default">
+          <input type="hidden" id="selected-price-${rowId}" value="${parseFloat(v.price || product.price || 0)}">
           <input type="hidden" id="max-stock-${rowId}" value="${v.stock}">
           <div class="variant-cards-wrap" style="margin-bottom: 0;">
-             <span style="font-size:12px;color:var(--kaam-success, #27ae60);font-weight:600;">${v.stock} in stock</span>
+             <span style="font-size:12px;color:var(--kaam-success, #27ae60);font-weight:600;">${v.stock} in stock · ₹${formatIndian(parseFloat(v.price || product.price || 0))}</span>
           </div>`;
       }
     } else {
@@ -242,10 +248,11 @@ function addProductInputRow(productId) {
             class="variant-chip"
             data-label="${v.label}"
             data-stock="${v.stock}"
+            data-price="${parseFloat(v.price || product.price || 0)}"
             data-row-id="${rowId}"
             title="${v.label}"
             onclick="selectVariant(this, '${rowId}', '${productId}')">
-            <span class="variant-chip-text">${formatVariantLabel(v.label)}</span>
+            <span class="variant-chip-text">${formatVariantLabel(v.label)} · ₹${formatIndian(parseFloat(v.price || product.price || 0))}</span>
           </button>`).join('') +
           outOfStockVariants.map(v => `
           <button type="button" class="variant-chip out-of-stock" disabled title="${v.label} · Out of stock">
@@ -257,6 +264,7 @@ function addProductInputRow(productId) {
             <div class="variant-cards-label">Choose variant <span class="required-star">*</span></div>
             <div class="variant-cards" id="variant-cards-${rowId}">${chipsHtml}</div>
             <input type="hidden" class="selected-variant-input" id="selected-variant-${rowId}" value="">
+            <input type="hidden" id="selected-price-${rowId}" value="${parseFloat(product.price || 0)}">
             <input type="hidden" id="max-stock-${rowId}" value="0">
           </div>`;
       }
@@ -300,6 +308,8 @@ function selectVariant(btn, rowId, productId) {
   btn.classList.add('selected');
   const hiddenInput = document.getElementById(`selected-variant-${rowId}`);
   if (hiddenInput) hiddenInput.value = btn.dataset.label;
+  const selectedPriceInput = document.getElementById(`selected-price-${rowId}`);
+  if (selectedPriceInput) selectedPriceInput.value = String(parseFloat(btn.dataset.price || 0));
   
   const maxStockInput = document.getElementById(`max-stock-${rowId}`);
   if (maxStockInput) maxStockInput.value = btn.dataset.stock;
@@ -397,13 +407,14 @@ function collectItemsFromDOM() {
     const qty = parseInt(qtyEl?.textContent) || 1;
     const product = window.PRODUCTS_DATA?.[productId] || {};
     if (productId) {
+      const selectedPrice = parseFloat(document.getElementById(`selected-price-${rowId}`)?.value || product.price || 0);
       items.push({
         product_id: productId,
         variant_label: variantLabel,
         size_color: variantLabel ? formatVariantLabel(variantLabel) : freeText,
         qty: qty,
         title: product.title || '',
-        price: product.price || 0,
+        price: selectedPrice,
       });
     }
   });
@@ -537,13 +548,20 @@ function initPaymentUpload() {
 
 // ─── SUBMIT ORDER ───
 async function submitOrder() {
+  if (isSubmitting) return;
+  if (orderData.payment_method === 'online' && !validateStep(5)) return;
+  isSubmitting = true;
   const submitBtn = document.getElementById('submit-btn');
+  const step4Btn = document.getElementById('step4-next-btn');
   if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Placing Order…'; }
+  if (step4Btn) { step4Btn.disabled = true; step4Btn.textContent = 'Placing Order…'; }
 
   collectItemsFromDOM();
   if (orderData.items.length === 0 || !orderData.payment_method) {
     showToast('Missing order data. Please go back and fill all fields.', 'error');
     if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Place Order →'; }
+    if (step4Btn) { step4Btn.disabled = false; step4Btn.textContent = 'Place Order →'; }
+    isSubmitting = false;
     return;
   }
 
@@ -582,13 +600,17 @@ async function submitOrder() {
   }
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
     const res = await fetch(`/${window.SELLER_USERNAME}/`, {
       method: 'POST',
       headers: {
         'X-CSRFToken': getCookie('csrftoken'),
       },
       body: formData,
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
     const data = await res.json();
     if (data.success) {
       sessionStorage.removeItem('kaam-order-session');
@@ -596,10 +618,14 @@ async function submitOrder() {
     } else {
       showToast(data.error || 'Something went wrong. Please try again.', 'error');
       if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Place Order →'; }
+      if (step4Btn) { step4Btn.disabled = false; step4Btn.textContent = 'Place Order →'; }
+      isSubmitting = false;
     }
   } catch (e) {
-    showToast('Network error. Check your connection and retry.', 'error');
+    showToast('Request timed out or failed. Please retry once.', 'error');
     if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Place Order →'; }
+    if (step4Btn) { step4Btn.disabled = false; step4Btn.textContent = 'Place Order →'; }
+    isSubmitting = false;
   }
 }
 
@@ -607,6 +633,32 @@ async function submitOrder() {
 function saveSession() {
   try {
     sessionStorage.setItem('kaam-order-session', JSON.stringify({ step: currentStep, orderData }));
+  } catch (e) {}
+}
+
+function savePersistentBuyerData() {
+  try {
+    const profile = {
+      buyer_name: orderData.buyer_name || '',
+      buyer_email: orderData.buyer_email || '',
+      buyer_whatsapp: orderData.buyer_whatsapp || '',
+      buyer_instagram: orderData.buyer_instagram || '',
+      country: orderData.country || 'India',
+      address_line1: orderData.address_line1 || '',
+      address_line2: orderData.address_line2 || '',
+      city: orderData.city || '',
+      state: orderData.state || '',
+      pincode: orderData.pincode || '',
+    };
+    localStorage.setItem(PERSIST_KEY, JSON.stringify(profile));
+  } catch (e) {}
+}
+
+function restorePersistentBuyerData() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PERSIST_KEY) || '{}');
+    if (!saved || typeof saved !== 'object') return;
+    Object.assign(orderData, saved);
   } catch (e) {}
 }
 
@@ -707,7 +759,13 @@ document.addEventListener('DOMContentLoaded', () => {
   history.pushState(null, '', location.pathname);
   initPaymentUpload();
   document.addEventListener('keydown', handleEnterNavigation);
+  restorePersistentBuyerData();
   restoreSession();
+  fillRestoredFields();
+  const canOnline = !!window.SELLER_SETTINGS?.allow_online_payment;
+  const canCod = !!window.SELLER_SETTINGS?.allow_cod;
+  if (canOnline && !canCod) selectPayment('online');
+  if (!canOnline && canCod) selectPayment('cod');
   document.querySelectorAll('.product-slip').forEach(card => {
     const productId = card.dataset.productId;
     if (productId) syncProductCardState(productId);

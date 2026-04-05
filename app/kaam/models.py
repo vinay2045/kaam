@@ -24,6 +24,10 @@ class Seller(models.Model):
     is_active = models.BooleanField(default=True)
     subscription_active = models.BooleanField(default=True)
     subscription_expires = models.DateField(null=True, blank=True)
+    allow_online_payment = models.BooleanField(default=True)
+    allow_cod = models.BooleanField(default=True)
+    allow_refunds = models.BooleanField(default=True)
+    allow_exchanges = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -109,7 +113,9 @@ class Order(models.Model):
     return_type = models.CharField(max_length=10, choices=[('refund', 'Refund'), ('exchange', 'Exchange')], null=True, blank=True)
     return_reason = models.CharField(max_length=100, blank=True)
     return_description = models.TextField(blank=True)
-    return_exchange_variant = models.CharField(max_length=200, blank=True) # Used if type is 'exchange'
+    return_exchange_variant = models.TextField(blank=True)  # Stores exchange selection details
+    return_items_json = models.TextField(blank=True, default='[]')  # Selected order items for return/refund/exchange
+    return_refund_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     return_proof_image = models.ImageField(upload_to='returns/%Y/%m/', blank=True, null=True)
     return_declined_reason = models.TextField(blank=True)
 

@@ -97,14 +97,39 @@
       <div class="product-card-img-placeholder">📷</div>
       {% endif %}
       <div class="product-card-body">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-          <span style="font-family:monospace;font-size:11px;font-weight:700;background:var(--kaam-saffron-pale,#fff8e1);color:var(--kaam-soot);padding:2px 8px;border-radius:99px;letter-spacing:0.04em;border:1px solid var(--kaam-saffron,#f5a623);">{{ product.product_id }}</span>
+        <div class="product-card-head">
+          <span class="product-pid-badge">{{ product.product_id }}</span>
+          {% if product.is_available %}
+          <span class="product-availability-badge available">Available</span>
+          {% else %}
+          <span class="product-availability-badge unavailable">Not Available</span>
+          {% endif %}
         </div>
         <div class="product-card-cat">{{ product.category }} · {{ product.subcategory }}</div>
         <div class="product-card-title">{{ product.title }}</div>
-        <div class="product-card-price">₹{{ product.price }}</div>
-        {% if product.size_color_raw %}
-        <div class="product-card-variants">{{ product.size_color_raw|truncatechars:50 }}</div>
+        <div class="product-card-price">Base: ₹{{ product.price }}</div>
+        {% if product.variant_preview %}
+        <div class="product-card-variants-wrap">
+          <div class="product-card-variants-title">Available Variants</div>
+          <div class="product-card-variant-list">
+            {% for v in product.variant_preview %}
+            <div class="product-card-variant-row">
+              <div class="product-card-variant-label">{{ v.label }}</div>
+              <div class="product-card-variant-meta">
+                <span class="variant-amount">₹{{ v.amount|floatformat:0 }}</span>
+                <span class="variant-stock {% if v.in_stock %}in{% else %}out{% endif %}">
+                  {% if v.in_stock %}{{ v.stock }} in stock{% else %}Out of stock{% endif %}
+                </span>
+              </div>
+            </div>
+            {% endfor %}
+            {% if product.variant_preview_more > 0 %}
+            <div class="product-card-variant-more">+{{ product.variant_preview_more }} more variant{{ product.variant_preview_more|pluralize }}</div>
+            {% endif %}
+          </div>
+        </div>
+        {% elif product.size_color_raw %}
+        <div class="product-card-variants">{{ product.size_color_raw|truncatechars:70 }}</div>
         {% endif %}
         <div class="product-card-actions">
           <a href="{% url 'product_edit' product.pk %}" class="btn btn-ghost btn-sm">✎ Edit</a>

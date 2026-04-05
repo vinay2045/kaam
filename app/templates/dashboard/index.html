@@ -91,27 +91,6 @@
     </div>
   </div>
 
-  <!-- DELIVERY STATUS STRIP (Quick Filter) -->
-  <div class="eyebrow" style="margin-bottom: 8px;">Quick Filter</div>
-  <div class="delivery-strip" style="margin-bottom:28px">
-    <a href="?tab=pending&status=packed{% if search_q %}&q={{ search_q|urlencode }}{% endif %}&per_page={{ per_page }}" class="dispatch-chip {% if stats.packed > 0 %}active{% endif %} {% if status_filter == 'packed' %}selected{% endif %}" data-status="packed" style="text-decoration:none">
-      <span class="chip-count">{{ stats.packed }}</span>
-      Packed
-    </a>
-    <a href="?tab=pending&status=shipped{% if search_q %}&q={{ search_q|urlencode }}{% endif %}&per_page={{ per_page }}" class="dispatch-chip {% if stats.shipped > 0 %}active{% endif %} {% if status_filter == 'shipped' %}selected{% endif %}" data-status="shipped" style="text-decoration:none">
-      <span class="chip-count">{{ stats.shipped }}</span>
-      Shipped
-    </a>
-    <a href="?tab=pending&status=out_for_delivery{% if search_q %}&q={{ search_q|urlencode }}{% endif %}&per_page={{ per_page }}" class="dispatch-chip {% if stats.out_for_delivery > 0 %}active{% endif %} {% if status_filter == 'out_for_delivery' %}selected{% endif %}" data-status="out_for_delivery" style="text-decoration:none">
-      <span class="chip-count">{{ stats.out_for_delivery }}</span>
-      Out for Delivery
-    </a>
-    <a href="?tab=completed&status=delivered{% if search_q %}&q={{ search_q|urlencode }}{% endif %}&per_page={{ per_page }}" class="dispatch-chip {% if stats.delivered > 0 %}active{% endif %} {% if status_filter == 'delivered' %}selected{% endif %}" data-status="delivered" style="text-decoration:none">
-      <span class="chip-count">{{ stats.delivered }}</span>
-      Delivered
-    </a>
-  </div>
-
   <!-- ORDER TABS + TABLE -->
   <div class="order-section">
     <div class="orders-header">
@@ -139,6 +118,27 @@
         </a>
       </div>
     </div>
+    {% if tab == 'pending' %}
+    <div class="eyebrow" style="margin-bottom: 8px;">Track Status</div>
+    <div class="delivery-strip" style="margin-bottom:20px">
+      <a href="?tab=pending&status=confirmed{% if search_q %}&q={{ search_q|urlencode }}{% endif %}&per_page={{ per_page }}" class="dispatch-chip {% if stats.confirmed > 0 %}active{% endif %} {% if status_filter == 'confirmed' %}selected{% endif %}" data-status="confirmed" style="text-decoration:none">
+        <span class="chip-count">{{ stats.confirmed }}</span>
+        Confirmed
+      </a>
+      <a href="?tab=pending&status=packed{% if search_q %}&q={{ search_q|urlencode }}{% endif %}&per_page={{ per_page }}" class="dispatch-chip {% if stats.packed > 0 %}active{% endif %} {% if status_filter == 'packed' %}selected{% endif %}" data-status="packed" style="text-decoration:none">
+        <span class="chip-count">{{ stats.packed }}</span>
+        Packed
+      </a>
+      <a href="?tab=pending&status=shipped{% if search_q %}&q={{ search_q|urlencode }}{% endif %}&per_page={{ per_page }}" class="dispatch-chip {% if stats.shipped > 0 %}active{% endif %} {% if status_filter == 'shipped' %}selected{% endif %}" data-status="shipped" style="text-decoration:none">
+        <span class="chip-count">{{ stats.shipped }}</span>
+        Shipped
+      </a>
+      <a href="?tab=pending&status=out_for_delivery{% if search_q %}&q={{ search_q|urlencode }}{% endif %}&per_page={{ per_page }}" class="dispatch-chip {% if stats.out_for_delivery > 0 %}active{% endif %} {% if status_filter == 'out_for_delivery' %}selected{% endif %}" data-status="out_for_delivery" style="text-decoration:none">
+        <span class="chip-count">{{ stats.out_for_delivery }}</span>
+        Out for Delivery
+      </a>
+    </div>
+    {% endif %}
 
     <form id="orders-search-form" method="GET" style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
       <input type="hidden" name="tab" value="{{ tab }}">
@@ -229,6 +229,11 @@
               <span id="status-badge-{{ order.order_id }}" class="badge {{ order.status|status_badge_class }}">
                 {{ order.get_status_display }}
               </span>
+              {% if order.return_status == 'exchanged' %}
+              <span class="badge badge-info" style="margin-top:6px">Exchanged Item</span>
+              {% elif order.return_status == 'refunded' %}
+              <span class="badge badge-warning" style="margin-top:6px">Refunded</span>
+              {% endif %}
             </td>
             <td>
               <div class="order-buyer">{{ order.buyer_name }}</div>
@@ -255,6 +260,9 @@
                 {{ order.get_payment_method_display }}
                 {% if order.payment_status == 'paid' %}✓{% endif %}
               </span>
+              {% if order.payment_method == 'online' %}
+              <div class="mono" style="font-size:12px;margin-top:6px">₹{{ order.total_amount }}</div>
+              {% endif %}
             </td>
 
             {% if tab == 'pending' %}
@@ -300,14 +308,18 @@
 
             <td onclick="event.stopPropagation()">
               {% if tab == 'new' %}
-              <button class="btn btn-primary btn-sm confirm-btn"
-                      onclick="confirmOrder('{{ order.order_id }}', this)"
-                      id="confirm-btn-{{ order.order_id }}">
-                Confirm Order
-              </button>
+              <div style="display:flex;gap:6px;flex-direction:column;min-width:140px">
+                <button class="btn btn-primary btn-sm confirm-btn"
+                        onclick="confirmOrder('{{ order.order_id }}', this)"
+                        id="confirm-btn-{{ order.order_id }}">
+                  Confirm Order
+                </button>
+                <a class="btn btn-ghost btn-sm" href="{% url 'order_detail' order.order_id %}">View Details</a>
+                <button class="btn btn-danger btn-sm" onclick="deleteOrder('{{ order.order_id }}')" style="background:transparent;color:var(--kaam-danger);border-color:var(--kaam-danger)">Delete</button>
+              </div>
               {% elif tab == 'pending' %}
-              <div style="display:flex;gap:5px;min-width:160px">
-                <a class="btn btn-ghost btn-sm" style="flex:1" href="{% url 'order_detail' order.order_id %}">View Details</a>
+              <div style="display:flex;gap:6px;flex-direction:column;min-width:160px">
+                <a class="btn btn-ghost btn-sm" href="{% url 'order_detail' order.order_id %}">View Details</a>
                 <button class="btn btn-danger btn-sm" onclick="deleteOrder('{{ order.order_id }}')" style="background:transparent;color:var(--kaam-danger);border-color:var(--kaam-danger)">Delete</button>
               </div>
               {% elif tab == 'returns' %}
@@ -327,12 +339,6 @@
                 {% endif %}
               {% endif %}
 
-              {% if tab != 'pending' %}
-              <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
-                <a class="btn btn-ghost btn-sm" href="{% url 'order_detail' order.order_id %}">View Details</a>
-                <button class="btn btn-danger btn-sm" onclick="deleteOrder('{{ order.order_id }}')" style="background:transparent;color:var(--kaam-danger);border-color:var(--kaam-danger)">Delete</button>
-              </div>
-              {% endif %}
             </td>
           </tr>
 
@@ -683,7 +689,9 @@
             <span style="font-size:11px; font-weight:800; color:var(--kaam-stone-dark)">TOTAL:</span>
             <span style="font-size:20px; font-weight:800; color:var(--kaam-ink)">₹<span id="manual-order-total">0</span></span>
           </div>
-          </div>
+          <button type="submit" class="btn btn-primary" style="padding:10px 18px; font-weight:700">
+            Save Order
+          </button>
         </div>
       </form>
     </div>
@@ -727,6 +735,9 @@
       <div class="row-variant-chips" style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom:10px">
         <!-- Chips -->
       </div>
+      <div style="font-size:11px;color:var(--kaam-stone-dark);margin-bottom:8px">
+        Price: ₹<span class="row-unit-price">0</span> · Stock: <span class="row-max-stock">0</span>
+      </div>
       
       <div style="display:flex; justify-content:space-between; align-items:center">
         <div class="qty-pick" style="transform: scale(0.9); transform-origin: left center;">
@@ -742,6 +753,8 @@
         </div>
       </div>
       <input type="hidden" name="variant_names[]" value="Standard">
+      <input type="hidden" name="variant_prices[]" value="0">
+      <input type="hidden" class="row-max-stock-input" value="999999">
     </div>
   </template>
 
@@ -881,31 +894,70 @@
     const row = rowClone.querySelector('.variant-config-row');
     const chipsCont = row.querySelector('.row-variant-chips');
     
+    const updateRowMeta = (rowNode, unitPrice, stock) => {
+      const priceEl = rowNode.querySelector('.row-unit-price');
+      const stockEl = rowNode.querySelector('.row-max-stock');
+      const priceInput = rowNode.querySelector('input[name="variant_prices[]"]');
+      const maxStockInput = rowNode.querySelector('.row-max-stock-input');
+      if (priceEl) priceEl.textContent = Number(unitPrice || 0).toLocaleString('en-IN');
+      if (stockEl) stockEl.textContent = String(stock ?? 0);
+      if (priceInput) priceInput.value = String(unitPrice || 0);
+      if (maxStockInput) maxStockInput.value = String(stock ?? 0);
+    };
+
     if (!p.variants || p.variants.length === 0) {
-      chipsCont.innerHTML = `<button type="button" class="variant-chip active" onclick="selectManualVariant(this, 'Standard')">Standard</button>`;
+      chipsCont.innerHTML = `<button type="button" class="variant-chip active" onclick="selectManualVariant(this, 'Standard', ${p.price}, 999999)">Standard</button>`;
       row.querySelector('input[name="variant_names[]"]').value = 'Standard';
+      updateRowMeta(row, p.price, 999999);
     } else {
       p.variants.forEach((v, index) => {
         const label = v.name || v.label || (typeof v === 'string' ? v : JSON.stringify(v));
+        const variantStock = parseInt(v.stock || 0, 10);
+        const variantPrice = parseFloat(v.price || p.price || 0);
         const chip = document.createElement('button');
         chip.type = 'button';
         chip.className = 'variant-chip' + (index === 0 ? ' active' : '');
-        chip.textContent = label;
-        chip.onclick = () => selectManualVariant(chip, label);
+        chip.textContent = `${label} (₹${Number(variantPrice).toLocaleString('en-IN')} | ${variantStock} stock)`;
+        chip.onclick = () => selectManualVariant(chip, label, variantPrice, variantStock);
+        if (variantStock <= 0) {
+          chip.disabled = true;
+          chip.classList.remove('active');
+          chip.style.opacity = '0.45';
+          chip.style.cursor = 'not-allowed';
+        }
         chipsCont.appendChild(chip);
-        if (index === 0) row.querySelector('input[name="variant_names[]"]').value = label;
+        if (index === 0 && variantStock > 0) {
+          row.querySelector('input[name="variant_names[]"]').value = label;
+          updateRowMeta(row, variantPrice, variantStock);
+        }
       });
+      if (!row.querySelector('.variant-chip.active')) {
+        const firstAvailable = row.querySelector('.variant-chip:not([disabled])');
+        if (firstAvailable) firstAvailable.click();
+      }
     }
 
     card.querySelector('.variant-rows-container').appendChild(rowClone);
     calculateManualOrderTotal();
   }
 
-  function selectManualVariant(chip, label) {
+  function selectManualVariant(chip, label, price, stock) {
     const row = chip.closest('.variant-config-row');
     row.querySelectorAll('.variant-chip').forEach(c => c.classList.remove('active'));
     chip.classList.add('active');
     row.querySelector('input[name="variant_names[]"]').value = label;
+    row.querySelector('input[name="variant_prices[]"]').value = String(price || 0);
+    row.querySelector('.row-max-stock-input').value = String(stock || 0);
+    const priceEl = row.querySelector('.row-unit-price');
+    const stockEl = row.querySelector('.row-max-stock');
+    if (priceEl) priceEl.textContent = Number(price || 0).toLocaleString('en-IN');
+    if (stockEl) stockEl.textContent = String(stock || 0);
+    const qtyInput = row.querySelector('input[name="quantities[]"]');
+    const maxStock = parseInt(stock || 0, 10);
+    if (qtyInput && maxStock > 0 && parseInt(qtyInput.value || '1', 10) > maxStock) {
+      qtyInput.value = maxStock;
+    }
+    calculateManualOrderTotal();
   }
 
   function removeVariantRow(btn) {
@@ -918,9 +970,14 @@
   }
 
   function changeManualQty(btn, delta) {
-    const input = btn.closest('.qty-pick').querySelector('input');
+    const row = btn.closest('.variant-config-row');
+    const input = row.querySelector('.qty-pick input');
     let val = parseInt(input.value) || 1;
     val = Math.max(1, val + delta);
+    const maxStock = parseInt(row.querySelector('.row-max-stock-input')?.value || '999999', 10);
+    if (maxStock > 0) {
+      val = Math.min(val, maxStock);
+    }
     input.value = val;
     calculateManualOrderTotal();
   }
@@ -928,11 +985,11 @@
   function calculateManualOrderTotal() {
     let grandTotal = 0;
     document.querySelectorAll('.manual-item-card').forEach(card => {
-      const price = parseFloat(card.getAttribute('data-price')) || 0;
       card.querySelectorAll('.variant-config-row').forEach(row => {
         const qtyInput = row.querySelector('input[name="quantities[]"]');
         const qty = parseInt(qtyInput.value) || 0;
-        const sub = price * qty;
+        const unitPrice = parseFloat(row.querySelector('input[name="variant_prices[]"]')?.value || card.getAttribute('data-price') || 0);
+        const sub = unitPrice * qty;
         row.querySelector('.row-subtotal').textContent = sub.toLocaleString('en-IN');
         grandTotal += sub;
       });

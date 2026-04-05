@@ -258,6 +258,7 @@
         <!-- Payment methods -->
         <h3 style="margin-bottom:14px;font-size:16px;font-weight:700">Choose Payment Method</h3>
         <div class="payment-options">
+          {% if seller.allow_online_payment %}
           <div class="payment-ticket" data-method="online" onclick="selectPayment('online')" id="ticket-online">
             <div class="payment-ticket-icon"><i class="ri-smartphone-line"></i></div>
             <div class="payment-ticket-text">
@@ -266,6 +267,8 @@
             </div>
             <div class="payment-ticket-radio" id="radio-online"></div>
           </div>
+          {% endif %}
+          {% if seller.allow_cod %}
           <div class="payment-ticket" data-method="cod" onclick="selectPayment('cod')" id="ticket-cod">
             <div class="payment-ticket-icon"><i class="ri-cash-line"></i></div>
             <div class="payment-ticket-text">
@@ -274,7 +277,11 @@
             </div>
             <div class="payment-ticket-radio" id="radio-cod"></div>
           </div>
+          {% endif %}
         </div>
+        {% if not seller.allow_online_payment and not seller.allow_cod %}
+        <div class="alert alert-warning" style="margin-top:12px">This store has temporarily disabled all payment methods. Please contact seller support.</div>
+        {% endif %}
 
         <div style="margin-top:24px;display:flex;gap:10px">
           <button class="btn btn-ghost" onclick="prevStep()">← Back</button>
@@ -333,6 +340,10 @@
 <script>
 window.SELLER_USERNAME = '{{ seller.username }}';
 window.PRODUCTS_DATA = {{ products_json|safe }}; // Lint IDs: 987b5f26-4a55-41c0-917c-abd54abfa1e9, 1ea0da15-559d-4821-ace9-2f5d99598ea3
+window.SELLER_SETTINGS = {
+  allow_online_payment: {% if seller.allow_online_payment %}true{% else %}false{% endif %},
+  allow_cod: {% if seller.allow_cod %}true{% else %}false{% endif %}
+};
 function filterStoreProducts(query) {
   const q = query.toLowerCase().trim();
   const slips = document.querySelectorAll('.product-slip');

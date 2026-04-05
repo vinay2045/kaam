@@ -735,6 +735,43 @@
   font-size: 40px; color: var(--kaam-stone);
 }
 .product-card-body { padding: 14px 16px; flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.product-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.product-pid-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--kaam-saffron-pale);
+  color: var(--kaam-soot);
+  padding: 3px 9px;
+  border-radius: 99px;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--kaam-saffron);
+}
+.product-availability-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 99px;
+  border: 1px solid var(--kaam-line);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.product-availability-badge.available {
+  background: rgba(46, 106, 79, 0.12);
+  color: var(--kaam-success);
+  border-color: rgba(46, 106, 79, 0.4);
+}
+.product-availability-badge.unavailable {
+  background: rgba(217, 45, 32, 0.12);
+  color: var(--kaam-danger);
+  border-color: rgba(217, 45, 32, 0.4);
+}
 .product-card-cat {
   font-size: 11px; font-weight: 600;
   color: var(--kaam-stone-dark);
@@ -745,10 +782,85 @@
 .product-card-title { font-size: 14px; font-weight: 600; color: var(--kaam-ink); margin-bottom: 6px; }
 .product-card-price {
   font-family: var(--font-mono);
-  font-size: 16px; font-weight: 600;
+  font-size: 14px; font-weight: 600;
   color: var(--kaam-soot); margin-bottom: 6px;
 }
 .product-card-variants { font-size: 11px; color: var(--kaam-stone-dark); margin-bottom: 14px; }
+.product-card-variants-wrap {
+  background: var(--kaam-paper);
+  border: 1px solid var(--kaam-line);
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 12px;
+}
+.product-card-variants-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--kaam-stone-dark);
+  margin-bottom: 8px;
+}
+.product-card-variant-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.product-card-variant-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px dashed var(--kaam-line);
+  padding-bottom: 6px;
+}
+.product-card-variant-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.product-card-variant-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--kaam-ink);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.product-card-variant-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.variant-amount {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--kaam-soot);
+}
+.variant-stock {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 99px;
+  border: 1px solid var(--kaam-line);
+}
+.variant-stock.in {
+  color: var(--kaam-success);
+  border-color: rgba(46, 106, 79, 0.35);
+  background: rgba(46, 106, 79, 0.08);
+}
+.variant-stock.out {
+  color: var(--kaam-danger);
+  border-color: rgba(217, 45, 32, 0.35);
+  background: rgba(217, 45, 32, 0.08);
+}
+.product-card-variant-more {
+  font-size: 11px;
+  color: var(--kaam-stone-dark);
+  font-weight: 600;
+}
 .product-card-actions { display: flex; gap: 8px; }
 
 /* ─── PRODUCT FORM ─── */
@@ -980,6 +1092,11 @@
   .product-card-body { padding: 10px 12px; }
   .product-card-price { font-size: 14px; margin-bottom: 2px; }
   .product-card-title { font-size: 13px; line-height: 1.3; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .product-card-variants-wrap { padding: 8px; margin-bottom: 8px; }
+  .product-card-variants-title { font-size: 9px; margin-bottom: 6px; }
+  .product-card-variant-label { font-size: 11px; max-width: 120px; }
+  .variant-amount { font-size: 11px; }
+  .variant-stock { font-size: 9px; padding: 2px 6px; }
   .product-card-variants { font-size: 10px; margin-bottom: auto; padding-bottom: 8px; }
   .product-card-actions { gap: 6px; }
   .product-card-actions .btn { font-size: 10px; padding: 4px 8px; }

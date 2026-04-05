@@ -36,7 +36,17 @@
 
         <!-- SECTION 1: Image -->
         <div>
-          <div class="form-section-title">Product Image</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div class="form-section-title" style="margin-bottom:0">Product Image</div>
+            {% if mode == 'edit' %}
+            <label class="input-label availability-toggle" style="display:flex;align-items:center;gap:10px;cursor:pointer;margin:0">
+              <input type="checkbox" name="is_available" id="id_is_available"
+                     {% if product.is_available %}checked{% endif %}
+                     style="width:16px;height:16px;accent-color:var(--kaam-saffron)">
+              Product Available
+            </label>
+            {% endif %}
+          </div>
 
           {% if mode == 'edit' and product.image %}
           <div style="margin-bottom:16px">
@@ -106,14 +116,6 @@
               <div style="font-family:monospace;font-size:15px;font-weight:700;color:var(--kaam-soot);letter-spacing:0.08em">{{ product.product_id }}</div>
               <div style="font-size:11px;color:var(--kaam-stone-dark);margin-top:4px">Share this ID with buyers so they can search for this product directly.</div>
             </div>
-            <div class="input-group">
-              <label class="input-label availability-toggle" style="display:flex;align-items:center;gap:10px;cursor:pointer">
-                <input type="checkbox" name="is_available" id="id_is_available"
-                       {% if product.is_available %}checked{% endif %}
-                       style="width:16px;height:16px;accent-color:var(--kaam-saffron)">
-                Product is available for ordering
-              </label>
-            </div>
             {% endif %}
           </div>
         </div>
@@ -144,6 +146,10 @@
                <div class="vb-col vb-stock-col">
                   <label class="input-label">Stock *</label>
                   <input type="number" id="vb-stock-input" class="input-field" placeholder="e.g. 90" min="0">
+               </div>
+               <div class="vb-col vb-price-col">
+                  <label class="input-label">Amount (Rs) *</label>
+                  <input type="number" id="vb-price-input" class="input-field" placeholder="e.g. 899" min="0" step="0.01">
                </div>
                <div class="vb-col vb-add-btn-col">
                   <button type="button" class="btn btn-primary" id="vb-add-btn" style="height:42px; padding:0 24px;">Add Variant</button>
@@ -343,6 +349,10 @@
 .vb-stock-col {
   flex: 0 0 140px;
   min-width: 140px;
+}
+.vb-price-col {
+  flex: 0 0 160px;
+  min-width: 160px;
 }
 .vb-add-btn-col {
   flex: 0 0 auto;
@@ -910,7 +920,8 @@ function parseExistingRawToVb() {
       vbItems.push({
         id: vbNextId++,
         attributes: attributes,
-        stock: parseInt(v.stock, 10) || 0
+        stock: parseInt(v.stock, 10) || 0,
+        price: parseFloat(v.price || document.getElementById('id_price')?.value || 0) || 0
       });
     });
     generateRawTextFromVb();
@@ -943,10 +954,17 @@ function getItemDisplay(item) {
 
 function addVbItem() {
   const stockEl = document.getElementById('vb-stock-input');
+  const priceEl = document.getElementById('vb-price-input');
   const stock = parseInt(stockEl.value, 10);
+  const parsedPrice = parseFloat(priceEl.value || document.getElementById('id_price')?.value || '0');
   if (isNaN(stock) || stock < 0) {
     alert('Please enter a valid stock amount greater than or equal to 0.');
     stockEl.focus();
+    return;
+  }
+  if (isNaN(parsedPrice) || parsedPrice < 0) {
+    alert('Please enter a valid amount.');
+    priceEl.focus();
     return;
   }
   const normalizedAttrs = vbDraftAttrs.map(attr => ({
@@ -963,9 +981,11 @@ function addVbItem() {
   vbItems.push({
     id: vbNextId++,
     attributes,
-    stock
+    stock,
+    price: parsedPrice
   });
   stockEl.value = '';
+  if (priceEl) priceEl.value = '';
   generateRawTextFromVb();
   renderVbTable();
 }
@@ -994,6 +1014,7 @@ function renderVbTable() {
       <div class="vb-row">
         <div class="vb-row-texts">${title}</div>
         <div class="vb-row-stock">${item.stock} in stock</div>
+        <div class="vb-row-stock" style="margin-left:8px;background:var(--kaam-paper);border:1px solid var(--kaam-line)">₹${Number(item.price || 0).toLocaleString('en-IN')}</div>
         <div style="margin-left:14px">
           <span class="vb-row-del" onclick="removeVbItem(${item.id})" title="Remove">✕</span>
         </div>
@@ -1014,12 +1035,14 @@ function generateRawTextFromVb() {
       return {
         label: 'Default',
         stock: item.stock,
+        price: Number(item.price || 0),
         is_default: true
       };
     }
     const entry = {
       label: display.label,
       stock: item.stock,
+      price: Number(item.price || 0),
       attributes: display.attributes
     };
     if (display.color) entry.color = display.color;

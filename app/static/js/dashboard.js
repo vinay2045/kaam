@@ -100,7 +100,12 @@ function updateNotifications(notifs, unreadCount) {
 }
 
 function updateDeliveryStrip(data) {
-  const map = { packed: data.packed, shipped: data.shipped, out_for_delivery: data.out_for_delivery, delivered: data.delivered };
+  const map = {
+    confirmed: data.confirmed,
+    packed: data.packed,
+    shipped: data.shipped,
+    out_for_delivery: data.out_for_delivery
+  };
   Object.entries(map).forEach(([status, count]) => {
     const countEl = document.querySelector(`.dispatch-chip[data-status="${status}"] .chip-count`);
     if (countEl) countEl.textContent = count;

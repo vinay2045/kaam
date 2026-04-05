@@ -89,7 +89,71 @@
     </form>
   </div>
 
-  <!-- SECTION 2: Subscription (read-only) -->
+  <!-- SECTION 2: Payment Settings -->
+  <div class="settings-section">
+    <div class="settings-section-header">Payment Settings</div>
+    <form method="POST" action="{% url 'settings' %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="commerce">
+      <input type="hidden" name="allow_refunds" value="{% if seller.allow_refunds %}on{% else %}off{% endif %}">
+      <input type="hidden" name="allow_exchanges" value="{% if seller.allow_exchanges %}on{% else %}off{% endif %}">
+      <div class="settings-section-body">
+        <div class="card-paper settings-toggle-list">
+          <label class="settings-toggle-row">
+            <span style="font-weight:700">Online Payment</span>
+            <span class="toggle-switch">
+              <input type="checkbox" name="allow_online_payment" {% if seller.allow_online_payment %}checked{% endif %}>
+              <span class="toggle-slider"></span>
+            </span>
+          </label>
+          <label class="settings-toggle-row">
+            <span style="font-weight:700">Cash on Delivery</span>
+            <span class="toggle-switch">
+              <input type="checkbox" name="allow_cod" {% if seller.allow_cod %}checked{% endif %}>
+              <span class="toggle-slider"></span>
+            </span>
+          </label>
+        </div>
+      </div>
+      <div class="settings-section-footer">
+        <button type="submit" class="btn btn-primary">Save Payment Settings</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- SECTION 3: Refund & Exchange Settings -->
+  <div class="settings-section">
+    <div class="settings-section-header">Refund & Exchange Settings</div>
+    <form method="POST" action="{% url 'settings' %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="commerce">
+      <input type="hidden" name="allow_online_payment" value="{% if seller.allow_online_payment %}on{% else %}off{% endif %}">
+      <input type="hidden" name="allow_cod" value="{% if seller.allow_cod %}on{% else %}off{% endif %}">
+      <div class="settings-section-body">
+        <div class="card-paper settings-toggle-list">
+          <label class="settings-toggle-row">
+            <span style="font-weight:700">Allow Refunds</span>
+            <span class="toggle-switch">
+              <input type="checkbox" name="allow_refunds" {% if seller.allow_refunds %}checked{% endif %}>
+              <span class="toggle-slider"></span>
+            </span>
+          </label>
+          <label class="settings-toggle-row">
+            <span style="font-weight:700">Allow Exchanges</span>
+            <span class="toggle-switch">
+              <input type="checkbox" name="allow_exchanges" {% if seller.allow_exchanges %}checked{% endif %}>
+              <span class="toggle-slider"></span>
+            </span>
+          </label>
+        </div>
+      </div>
+      <div class="settings-section-footer">
+        <button type="submit" class="btn btn-primary">Save Refund & Exchange Settings</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- SECTION 4: Subscription (read-only) -->
   <div class="settings-section">
     <div class="settings-section-header">Subscription Status</div>
     <div class="settings-section-body">
@@ -123,7 +187,7 @@
     </div>
   </div>
 
-  <!-- SECTION 3: Data & Export -->
+  <!-- SECTION 5: Data & Export -->
   <div class="settings-section">
     <div class="settings-section-header">Data & Export</div>
     <div class="settings-section-body">
@@ -153,7 +217,7 @@
     </div>
   </div>
 
-  <!-- SECTION 4: Change Password -->
+  <!-- SECTION 6: Change Password -->
   <div class="settings-section">
     <div class="settings-section-header">Change Password</div>
     <form method="POST" action="{% url 'settings' %}">
@@ -182,6 +246,20 @@
   </div>
 
 </div>
+<style>
+.settings-toggle-list { display:flex; flex-direction:column; gap:12px; }
+.settings-toggle-row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.toggle-switch { position:relative; display:inline-block; width:46px; height:26px; }
+.toggle-switch input { opacity:0; width:0; height:0; }
+.toggle-slider {
+  position:absolute; inset:0; cursor:pointer; background:var(--kaam-line-strong); border-radius:999px; transition:all .2s ease;
+}
+.toggle-slider:before {
+  content:""; position:absolute; height:20px; width:20px; left:3px; top:3px; background:var(--kaam-milk); border-radius:50%; transition:all .2s ease;
+}
+.toggle-switch input:checked + .toggle-slider { background:var(--kaam-saffron); }
+.toggle-switch input:checked + .toggle-slider:before { transform:translateX(20px); }
+</style>
 {% endblock %}
 
 {% block seller_js %}

@@ -372,8 +372,12 @@
           <p style="font-size:13px;color:var(--kaam-stone-dark);margin-bottom:14px">Not satisfied? Select an option below within your return policy window.</p>
           
           <div style="display:flex;gap:10px;margin-bottom:14px">
-            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="document.getElementById('refund-form').style.display='block';document.getElementById('exchange-form').style.display='none'"><i class="ri-refund-2-line"></i> Refund</button>
-            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="document.getElementById('exchange-form').style.display='block';document.getElementById('refund-form').style.display='none'"><i class="ri-exchange-box-line"></i> Exchange</button>
+            {% if order.seller.allow_refunds %}
+            <button class="btn btn-ghost btn-sm" type="button" style="flex:1" onclick="document.getElementById('refund-form').style.display='block';document.getElementById('exchange-form').style.display='none'"><i class="ri-refund-2-line"></i> Refund</button>
+            {% endif %}
+            {% if order.seller.allow_exchanges %}
+            <button class="btn btn-ghost btn-sm" type="button" style="flex:1" onclick="document.getElementById('exchange-form').style.display='block';document.getElementById('refund-form').style.display='none'"><i class="ri-exchange-box-line"></i> Exchange</button>
+            {% endif %}
           </div>
 
           <!-- Refund Form -->
@@ -396,6 +400,18 @@
             <div class="input-group" style="margin-bottom:12px">
               <label class="input-label" style="font-size:11px">Explanation</label>
               <textarea class="input-field" name="return_description" rows="2" placeholder="Briefly explain the issue..." required style="font-size:13px"></textarea>
+            </div>
+
+            <div class="input-group" style="margin-bottom:12px">
+              <label class="input-label" style="font-size:11px">Select items for refund</label>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                {% for item in order.items.all %}
+                <label style="display:flex;align-items:center;gap:8px">
+                  <input type="checkbox" name="return_item_ids" value="{{ item.id }}">
+                  <span style="font-size:12px">{{ item.product_title }} ({{ item.selected_size_color }}) · Qty {{ item.quantity }} · ₹{{ item.subtotal }}</span>
+                </label>
+                {% endfor %}
+              </div>
             </div>
             
             <div class="input-group" style="margin-bottom:12px">
@@ -423,20 +439,29 @@
             </div>
 
             <div class="input-group" style="margin-bottom:14px">
-              {% if exchange_options %}
-              <div class="variant-cards-label">Choose variant <span style="color:var(--kaam-danger)">*</span></div>
-              <div class="variant-cards">
-                {% for opt in exchange_options %}
-                <button type="button" class="variant-chip" data-value="{{ opt.value }}" onclick="selectExchangeVariant(this)">
-                  {{ opt.label }}
-                </button>
+              <div class="variant-cards-label">Select exchange items and replacement variants</div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                {% for item_opt in exchange_options %}
+                <div style="padding:10px;border:1px solid var(--kaam-line);border-radius:var(--radius-md)">
+                  <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <input type="checkbox" class="exchange-item-check" name="return_item_ids" value="{{ item_opt.item_id }}" onchange="updateExchangeVariantMap()">
+                    <span style="font-size:12px;font-weight:700">{{ item_opt.item_title }}</span>
+                    <span style="font-size:11px;color:var(--kaam-stone-dark)">Current: {{ item_opt.current_variant }}</span>
+                  </label>
+                  {% if item_opt.options %}
+                  <select class="input-field exchange-variant-select" data-item-id="{{ item_opt.item_id }}" style="font-size:12px" onchange="updateExchangeVariantMap()">
+                    <option value="">Choose replacement variant...</option>
+                    {% for opt in item_opt.options %}
+                    <option value="{{ opt.value }}">{{ opt.label }}</option>
+                    {% endfor %}
+                  </select>
+                  {% else %}
+                  <div style="font-size:12px;color:var(--kaam-stone-dark)">No replacement variants available for this item right now.</div>
+                  {% endif %}
+                </div>
                 {% endfor %}
               </div>
-              <input type="hidden" name="return_exchange_variant" id="hidden_exchange_variant" required>
-              {% else %}
-              <label class="input-label" style="font-size:11px">What do you want instead?</label>
-              <input type="text" class="input-field" name="return_exchange_variant" placeholder="e.g., Size L, Black color" required style="font-size:13px">
-              {% endif %}
+              <input type="hidden" name="return_exchange_variant_map" id="exchange_variant_map">
             </div>
             
             <div class="input-group" style="margin-bottom:12px">
@@ -495,13 +520,18 @@
 </div>
 <script src="{% static 'js/utils.js' %}?v={% now 'U' %}"></script>
 <script>
-  function selectExchangeVariant(btn) {
-    // Deselect siblings
-    btn.parentNode.querySelectorAll('.variant-chip').forEach(c => c.classList.remove('selected'));
-    // Select clicked
-    btn.classList.add('selected');
-    // Update hidden input
-    document.getElementById('hidden_exchange_variant').value = btn.dataset.value;
+  function updateExchangeVariantMap() {
+    const out = {};
+    document.querySelectorAll('.exchange-item-check').forEach(function (checkbox) {
+      if (!checkbox.checked) return;
+      const itemId = checkbox.value;
+      const select = document.querySelector('.exchange-variant-select[data-item-id="' + itemId + '"]');
+      if (select && select.value) {
+        out[itemId] = select.value;
+      }
+    });
+    const hidden = document.getElementById('exchange_variant_map');
+    if (hidden) hidden.value = JSON.stringify(out);
   }
 </script>
 </body>
