@@ -16,9 +16,14 @@ class Migration(migrations.Migration):
             name='email',
             field=models.EmailField(blank=True, help_text='Business email for contact', max_length=254),
         ),
-        migrations.AlterField(
-            model_name='product',
-            name='product_id',
-            field=models.CharField(default=kaam.models.generate_product_id, editable=False, max_length=20, unique=True),
+        migrations.SeparateDatabaseAndState(
+            state_operations=[
+                migrations.AlterField(
+                    model_name='product',
+                    name='product_id',
+                    field=models.CharField(default=kaam.models.generate_product_id, editable=False, max_length=20, unique=True),
+                ),
+            ],
+            database_operations=[],
         ),
     ]
