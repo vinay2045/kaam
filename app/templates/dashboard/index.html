@@ -3,7 +3,7 @@
 {% load kaam_filters %}
 
 {% block meta %}
-<title>Dashboard — Kaam</title>
+<title>Dashboard — Order Karle</title>
 {% endblock %}
 
 {% block mob_dash_active %}active{% endblock %}
@@ -307,38 +307,29 @@
             {% endif %}
 
             <td onclick="event.stopPropagation()">
-              {% if tab == 'new' %}
               <div style="display:flex;gap:6px;flex-direction:column;min-width:140px">
+                {% if tab == 'new' %}
                 <button class="btn btn-primary btn-sm confirm-btn"
                         onclick="confirmOrder('{{ order.order_id }}', this)"
                         id="confirm-btn-{{ order.order_id }}">
                   Confirm Order
                 </button>
-                <a class="btn btn-ghost btn-sm" href="{% url 'order_detail' order.order_id %}">View Details</a>
-                <button class="btn btn-danger btn-sm" onclick="deleteOrder('{{ order.order_id }}')" style="background:transparent;color:var(--kaam-danger);border-color:var(--kaam-danger)">Delete</button>
-              </div>
-              {% elif tab == 'pending' %}
-              <div style="display:flex;gap:6px;flex-direction:column;min-width:160px">
-                <a class="btn btn-ghost btn-sm" href="{% url 'order_detail' order.order_id %}">View Details</a>
-                <button class="btn btn-danger btn-sm" onclick="deleteOrder('{{ order.order_id }}')" style="background:transparent;color:var(--kaam-danger);border-color:var(--kaam-danger)">Delete</button>
-              </div>
-              {% elif tab == 'returns' %}
-                {% if order.return_status == 'requested' %}
-                <div style="display:flex;gap:6px;flex-direction:column">
+                {% elif tab == 'returns' %}
+                  {% if order.return_status == 'requested' %}
                   <button class="btn btn-primary btn-sm" onclick="processReturn('{{ order.order_id }}', 'approve')">Approve</button>
                   <button class="btn btn-danger btn-sm" onclick="processReturn('{{ order.order_id }}', 'decline')" style="background:transparent;color:var(--kaam-danger);border-color:var(--kaam-danger)">Decline</button>
-                </div>
-                {% elif order.return_status == 'approved' %}
-                <div style="display:flex;gap:6px;flex-direction:column">
-                  {% if order.return_type == 'exchange' %}
-                  <button class="btn btn-primary btn-sm" onclick="processReturn('{{ order.order_id }}', 'exchanged')">Mark Exchanged</button>
-                  {% else %}
-                  <button class="btn btn-primary btn-sm" onclick="processReturn('{{ order.order_id }}', 'refunded')">Mark Refunded</button>
+                  {% elif order.return_status == 'approved' %}
+                    {% if order.return_type == 'exchange' %}
+                    <button class="btn btn-primary btn-sm" onclick="processReturn('{{ order.order_id }}', 'exchanged')">Mark Exchanged</button>
+                    {% else %}
+                    <button class="btn btn-primary btn-sm" onclick="processReturn('{{ order.order_id }}', 'refunded')">Mark Refunded</button>
+                    {% endif %}
                   {% endif %}
-                </div>
                 {% endif %}
-              {% endif %}
-
+                
+                <a class="btn btn-ghost btn-sm" href="{% url 'order_detail' order.order_id %}">View Details</a>
+                <button class="btn btn-danger btn-sm" onclick="deleteOrder('{{ order.order_id }}')" style="background:transparent;color:var(--kaam-danger);border-color:var(--kaam-danger)">Delete</button>
+              </div>
             </td>
           </tr>
 
@@ -391,7 +382,7 @@
                     </a>
                     {% endif %}
                     {% if order.buyer_email %}
-                    <br><a href="mailto:{{ order.buyer_email }}" class="expand-contact-link" style="margin-top:6px">
+                    <br><a href="https://mail.google.com/mail/?view=cm&fs=1&to={{ order.buyer_email }}" target="_blank" rel="noopener noreferrer" class="expand-contact-link" style="margin-top:6px">
                       <i class="ri-mail-line"></i> {{ order.buyer_email }}
                     </a>
                     {% endif %}
@@ -423,10 +414,17 @@
               <div style="padding:0 24px 20px 24px;border-top:1px solid var(--kaam-line);background:var(--kaam-paper);display:flex;gap:20px;padding-top:20px">
                 <div style="flex:1">
                   <div class="expand-section-title">Return Details</div>
-                  <div style="font-size:13px;color:var(--kaam-soot);line-height:1.6">
+                  <div style="font-size:13px; color:var(--kaam-soot); line-height:1.6">
                     <strong>Reason:</strong> {{ order.return_reason }}<br>
-                    {% if order.return_type == 'exchange' %}
-                    <strong>Wanted Variant:</strong> <span class="mono">{{ order.return_exchange_variant }}</span><br>
+                    {% if order.formatted_return_variants %}
+                    <strong>Wanted Variants:</strong>
+                    <div style="margin-top:6px; margin-bottom:10px; display:flex; flex-direction:column; gap:6px">
+                      {% for v in order.formatted_return_variants %}
+                      <div style="font-size:12px; font-weight:600; padding:6px 10px; background:var(--kaam-paper); border-radius:8px; border:1px solid var(--kaam-line); display:inline-block">
+                        {{ v }}
+                      </div>
+                      {% endfor %}
+                    </div>
                     {% endif %}
                     <strong>Explanation:</strong> {{ order.return_description }}
                   </div>
@@ -435,10 +433,10 @@
                   {% endif %}
                 </div>
                 {% if order.return_proof_image %}
-                <div>
-                  <div class="expand-section-title">Proof Image</div>
+                <div style="text-align:right">
+                  <div class="expand-section-title" style="margin-bottom:8px">Proof Image</div>
                   <a href="{{ order.return_proof_image.url }}" target="_blank">
-                    <img src="{{ order.return_proof_image.url }}" alt="Proof" style="width:100px;height:100px;object-fit:cover;border-radius:8px;border:1px solid var(--kaam-line)">
+                    <img src="{{ order.return_proof_image.url }}" alt="Proof" style="width:120px; height:120px; object-fit:cover; border-radius:12px; border:1px solid var(--kaam-line); box-shadow:var(--shadow-card)">
                   </a>
                 </div>
                 {% endif %}
@@ -531,7 +529,7 @@
             <div>
               <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--kaam-stone-dark);margin-bottom:3px">Contact</div>
               <a href="https://wa.me/{{ order.buyer_whatsapp|cut:' ' }}" target="_blank" style="font-size:11px;font-weight:600;color:var(--kaam-success)"><i class="ri-whatsapp-line"></i> {{ order.buyer_whatsapp }}</a>
-              <div><a href="mailto:{{ order.buyer_email }}" style="font-size:11px;font-weight:600;color:var(--kaam-info)"><i class="ri-mail-line"></i> {{ order.buyer_email }}</a></div>
+              <div><a href="https://mail.google.com/mail/?view=cm&fs=1&to={{ order.buyer_email }}" target="_blank" rel="noopener noreferrer" style="font-size:11px;font-weight:600;color:var(--kaam-info)"><i class="ri-mail-line"></i> {{ order.buyer_email }}</a></div>
             </div>
           </div>
 
@@ -1075,6 +1073,24 @@
 
   function openImportModal() { openModal('import-modal'); }
   document.addEventListener('DOMContentLoaded', function () {
+    var params = new URLSearchParams(window.location.search);
+    var shouldCleanUrl = false;
+    if (params.get('open_manual') === '1' && typeof openManualOrderModal === 'function') {
+      openManualOrderModal();
+      shouldCleanUrl = true;
+    }
+    if (params.get('open_import') === '1' && typeof openImportModal === 'function') {
+      openImportModal();
+      shouldCleanUrl = true;
+    }
+    if (shouldCleanUrl) {
+      params.delete('open_manual');
+      params.delete('open_import');
+      var nextQs = params.toString();
+      var nextUrl = window.location.pathname + (nextQs ? '?' + nextQs : '');
+      window.history.replaceState({}, document.title, nextUrl);
+    }
+
     var form = document.getElementById('orders-search-form');
     var input = document.getElementById('orders-search-input');
     if (!form || !input) return;

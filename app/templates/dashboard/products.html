@@ -2,11 +2,21 @@
 {% load static %}
 {% load kaam_filters %}
 
-{% block meta %}<title>Products — Kaam</title>{% endblock %}
+{% block meta %}<title>Products — Order Karle</title>{% endblock %}
 {% block mob_prod_active %}active{% endblock %}
 
 {% block dashboard_content %}
 <div class="dashboard-main">
+  <style>
+    .products-filter-row .select-all-label {
+      background: var(--kaam-soot) !important;
+      color: var(--kaam-milk) !important;
+      border: 1px solid var(--kaam-line-strong) !important;
+    }
+    .products-filter-row .select-all-label:hover {
+      background: var(--kaam-ink) !important;
+    }
+  </style>
 
   {% if messages %}
   <div class="messages-list">
@@ -74,7 +84,7 @@
     </div>
     <div class="empty-state-body">
       {% if q %}Try a different search term or clear the filter.
-      {% else %}Add your first product to start selling on Kaam.{% endif %}
+      {% else %}Add your first product to start selling on Order Karle.{% endif %}
     </div>
     {% if not q %}
     <a href="{% url 'product_add' %}" class="btn btn-primary">Add First Product</a>

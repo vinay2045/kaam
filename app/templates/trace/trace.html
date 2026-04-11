@@ -4,12 +4,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Track Order — Kaam</title>
-  <meta name="description" content="Track your Kaam order. Enter your order ID to see the current delivery status.">
+  <title>Track Order — Order Karle</title>
+  <meta name="description" content="Track your Order Karle order. Enter your order ID to see the current delivery status.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/base.css' %}?v={% now 'U' %}">
   <link rel="stylesheet" href="{% static 'css/components.css' %}?v={% now 'U' %}">
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/theme-toggles@4.10.1/css/expand.min.css">
   <script>
     (function() {
@@ -70,7 +71,7 @@
       font-family: var(--font-mono); font-size: 13px; color: var(--kaam-saffron-deep);
       margin-bottom: 4px;
     }
-    .order-card-buyer { font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--kaam-ink); }
+    .order-card-title { font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--kaam-ink); }
     .order-card-badge { flex-shrink: 0; }
 
     .order-timeline { padding: 24px; }
@@ -193,11 +194,11 @@
 
     <div class="trace-nav">
       <div style="display:flex;align-items:center;flex:1;">
-        <a href="/" class="trace-back">← kaam.com</a>
+        <a href="/" class="trace-back">← Order Karle.com</a>
       </div>
       <div class="kaam-wordmark" style="display:flex;justify-content:center;">
         <div class="kaam-wordmark-stamp">
-          <span class="kaam-wordmark-text">kaam</span>
+          <span class="kaam-wordmark-text">Order Karle</span>
         </div>
       </div>
       <div style="display:flex;align-items:center;flex:1;justify-content:flex-end;">
@@ -235,7 +236,7 @@
         <div class="trace-input-row">
           <input type="text" name="order_id" class="input-field"
                  id="trace-order-id"
-                 placeholder="e.g. ORD-20260330-512"
+                 placeholder="e.g. 21933904"
                  value="{% if order %}{{ order.order_id }}{% endif %}"
                  autocomplete="off">
           <button type="submit" class="btn btn-primary" style="white-space:nowrap">Track →</button>
@@ -250,9 +251,9 @@
       <div class="order-card-header">
         <div>
           <div class="order-card-id">{{ order.order_id }}</div>
-          <div class="order-card-buyer">{{ order.buyer_name }}</div>
+          <div class="order-card-title">Order Tracking</div>
           <div style="font-size:12px;color:var(--kaam-stone-dark);margin-top:4px">
-            {{ order.city }}, {{ order.state }} · {{ order.created_at|date:"d M Y" }}
+            Last updated: {{ order.updated_at|date:"d M Y, h:i A" }}
           </div>
         </div>
         <span class="badge badge-{{ order.status }} order-card-badge" style="font-size:12px">
@@ -394,6 +395,7 @@
                 <option value="Wrong Item Received">Wrong Item Received</option>
                 <option value="Quality Issue">Quality Issue</option>
                 <option value="Changed my mind">Changed my mind</option>
+                <option value="Other">Other (Please explain below)</option>
               </select>
             </div>
             
@@ -423,40 +425,66 @@
           </form>
 
           <!-- Exchange Form -->
-          <form id="exchange-form" method="POST" action="{% url 'trace_order_detail' order.order_id %}" enctype="multipart/form-data" style="display:none;background:var(--kaam-paper);padding:14px;border-radius:var(--radius-md)">
+          <form id="exchange-form" method="POST" action="{% url 'trace_order_detail' order.order_id %}" enctype="multipart/form-data" style="display:none; background:var(--kaam-paper); padding:20px; border-radius:var(--radius-xl); border:1.5px solid var(--kaam-stone); margin-top:16px; box-shadow:var(--shadow-card)">
             {% csrf_token %}
             <input type="hidden" name="action" value="request_return">
             <input type="hidden" name="return_type" value="exchange">
             
-            <div class="input-group" style="margin-bottom:12px">
-              <label class="input-label" style="font-size:11px">Reason for Exchange</label>
-              <select class="input-field" name="return_reason" required style="font-size:13px">
+            <div style="margin-bottom:20px">
+              <label class="input-label" style="font-size:12px; font-weight:700">Reason for Exchange</label>
+              <select class="input-field" name="return_reason" required style="font-size:14px; height:46px; border-radius:var(--radius-md)">
                 <option value="" disabled selected>Select a reason...</option>
                 <option value="Wrong Size/Color">Wrong Size/Color Ordered</option>
                 <option value="Item Defective">Item Defective</option>
                 <option value="Received Wrong Item">Received Wrong Item</option>
+                <option value="Other">Other (Please explain below)</option>
               </select>
             </div>
 
-            <div class="input-group" style="margin-bottom:14px">
-              <div class="variant-cards-label">Select exchange items and replacement variants</div>
-              <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="margin-bottom:24px">
+              <div class="variant-cards-label" style="margin-bottom:14px; color:var(--kaam-stone-dark); font-size:11px; letter-spacing:0.05em">Select items and replacement variants</div>
+              <div class="exchange-items-list" style="display:flex; flex-direction:column; gap:16px">
                 {% for item_opt in exchange_options %}
-                <div style="padding:10px;border:1px solid var(--kaam-line);border-radius:var(--radius-md)">
-                  <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-                    <input type="checkbox" class="exchange-item-check" name="return_item_ids" value="{{ item_opt.item_id }}" onchange="updateExchangeVariantMap()">
-                    <span style="font-size:12px;font-weight:700">{{ item_opt.item_title }}</span>
-                    <span style="font-size:11px;color:var(--kaam-stone-dark)">Current: {{ item_opt.current_variant }}</span>
-                  </label>
+                <div class="exchange-item-card" data-item-id="{{ item_opt.item_id }}" 
+                     style="padding:18px; background:var(--kaam-milk); border:1.5px solid var(--kaam-stone); border-radius:18px; transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor:pointer; position:relative"
+                     onclick="handleCardClick(this)">
+                  <div style="display:flex; align-items:center; gap:14px; margin-bottom:16px">
+                    <div class="custom-checkbox-wrap" style="position:relative; width:22px; height:22px">
+                      <input type="checkbox" class="exchange-item-check" name="return_item_ids" value="{{ item_opt.item_id }}" 
+                             style="position:absolute; opacity:0; width:100%; height:100%; cursor:pointer; z-index:2" 
+                             onclick="event.stopPropagation(); toggleExchangeCard(this)">
+                      <div class="custom-checkbox" style="width:100%; height:100%; border:2px solid var(--kaam-stone); border-radius:6px; background:var(--kaam-paper); transition:all 0.2s; display:flex; align-items:center; justify-content:center; color:white; font-size:14px">
+                        <i class="ri-check-line"></i>
+                      </div>
+                    </div>
+                    <div style="flex:1">
+                      <div style="font-size:15px; font-weight:700; color:var(--kaam-ink); line-height:1.2">{{ item_opt.item_title }}</div>
+                      <div style="font-size:12px; color:var(--kaam-stone-dark); margin-top:3px">Current: {{ item_opt.current_variant }}</div>
+                    </div>
+                  </div>
+                  
                   {% if item_opt.options %}
-                  <select class="input-field exchange-variant-select" data-item-id="{{ item_opt.item_id }}" style="font-size:12px" onchange="updateExchangeVariantMap()">
-                    <option value="">Choose replacement variant...</option>
-                    {% for opt in item_opt.options %}
-                    <option value="{{ opt.value }}">{{ opt.label }}</option>
-                    {% endfor %}
-                  </select>
+                  <div class="variant-chips-wrap" style="max-height:0; overflow:hidden; opacity:0; transition:all 0.3s ease">
+                    <div style="height:1px; background:var(--kaam-stone); margin-bottom:14px; opacity:0.5"></div>
+                    <label class="input-label" style="font-size:11px; margin-bottom:10px; color:var(--kaam-stone-dark)">Select New Variant</label>
+                    <div class="variant-chips-grid" style="display:flex; flex-wrap:wrap; gap:10px">
+                      {% for opt in item_opt.options %}
+                      <div class="variant-option-chip" 
+                           data-value="{{ opt.value }}" 
+                           data-item-id="{{ item_opt.item_id }}"
+                           onclick="event.stopPropagation(); selectExchangeVariant(this)"
+                           style="padding:10px 16px; background:var(--kaam-paper); border:1.5px solid var(--kaam-stone); border-radius:14px; font-size:13px; font-weight:600; color:var(--kaam-ink); transition:all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor:pointer; display:flex; align-items:center; gap:6px">
+                        <i class="ri-check-line variant-check" style="display:none; font-size:14px"></i>
+                        <span>{{ opt.label }}</span>
+                      </div>
+                      {% endfor %}
+                    </div>
+                  </div>
                   {% else %}
-                  <div style="font-size:12px;color:var(--kaam-stone-dark)">No replacement variants available for this item right now.</div>
+                  <div class="no-variants-msg" style="max-height:0; overflow:hidden; opacity:0; transition:all 0.3s ease">
+                    <div style="height:1px; background:var(--kaam-stone); margin-bottom:10px; opacity:0.5"></div>
+                    <div style="font-size:12px; color:var(--kaam-clay); font-style:italic">No replacement variants available.</div>
+                  </div>
                   {% endif %}
                 </div>
                 {% endfor %}
@@ -464,47 +492,96 @@
               <input type="hidden" name="return_exchange_variant_map" id="exchange_variant_map">
             </div>
             
-            <div class="input-group" style="margin-bottom:12px">
-              <label class="input-label" style="font-size:11px">Explanation</label>
-              <textarea class="input-field" name="return_description" rows="2" placeholder="Tell the seller details..." required style="font-size:13px"></textarea>
+            <div style="margin-bottom:20px">
+              <label class="input-label" style="font-size:12px; font-weight:700">Detailed Explanation</label>
+              <textarea class="input-field" name="return_description" rows="3" placeholder="Tell the seller more about why you need an exchange..." required style="font-size:14px; border-radius:var(--radius-md)"></textarea>
             </div>
             
-            <div class="input-group" style="margin-bottom:12px">
-              <label class="input-label" style="font-size:11px">Proof Image (Required)</label>
-              <input type="file" name="return_proof" class="input-field" accept="image/*" required style="font-size:12px;padding:6px">
+            <div style="margin-bottom:24px">
+              <label class="input-label" style="font-size:12px; font-weight:700">Proof Image (Required)</label>
+              <div class="file-upload-wrapper" style="position:relative; margin-top:8px">
+                <input type="file" name="return_proof" id="exchange-proof-input" class="input-field" accept="image/*" required 
+                       style="opacity:0; position:absolute; top:0; left:0; width:100%; height:100%; cursor:pointer; z-index:2"
+                       onchange="updateFileName(this, 'exchange-file-name')">
+                <div style="padding:14px; border:2px dashed var(--kaam-stone); border-radius:var(--radius-md); text-align:center; background:var(--kaam-milk)">
+                  <i class="ri-image-add-line" style="font-size:24px; color:var(--kaam-stone-dark)"></i>
+                  <div id="exchange-file-name" style="font-size:13px; color:var(--kaam-stone-dark); margin-top:6px">Tap to upload photo</div>
+                </div>
+              </div>
             </div>
             
-            <button type="submit" class="btn btn-primary btn-sm" style="width:100%">Submit Exchange Request</button>
+            <button type="submit" class="btn btn-primary" style="width:100%; height:50px; font-size:16px; font-weight:700">Submit Request</button>
+            <button type="button" class="btn btn-ghost btn-sm" style="width:100%; margin-top:12px" onclick="document.getElementById('exchange-form').style.display='none'">Cancel</button>
           </form>
         </div>
         
         {% else %}
         <!-- Display Return Status -->
-        <div class="feedback-section" style="margin-top:20px;{% if order.return_status == 'requested' %}border-color:var(--kaam-saffron){% elif order.return_status == 'declined' %}border-color:var(--kaam-danger);background:#FDECEB{% else %}border-color:var(--kaam-success){% endif %}">
-          <div class="order-section-title" style="color:var(--kaam-ink);display:flex;justify-content:space-between;align-items:center">
-            {% if order.return_type == 'exchange' %}Exchange Status{% else %}Refund Status{% endif %}
-            <span class="badge" style="font-size:10px;text-transform:uppercase;{% if order.return_status == 'declined' %}background:rgba(217,45,32,0.1);color:var(--kaam-danger){% elif order.return_status == 'requested' %}background:var(--kaam-saffron-soft);color:var(--kaam-soot){% else %}background:rgba(46,106,79,0.1);color:var(--kaam-success){% endif %}">
-              {{ order.get_return_status_display }}
-            </span>
+        <div class="feedback-section" style="margin-top:20px; border-radius:24px; padding:20px; background:var(--kaam-paper); border:1.5px solid var(--kaam-line);{% if order.return_status == 'requested' %}border-color:var(--kaam-saffron){% elif order.return_status == 'declined' %}background:rgba(161,70,47,0.04);border-color:var(--kaam-danger){% endif %}">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px">
+            <div>
+              <div style="font-size:11px; text-transform:uppercase; font-weight:700; color:var(--kaam-stone-dark); letter-spacing:0.05em; margin-bottom:4px">
+                {% if order.return_type == 'exchange' %}Exchange Request{% else %}Refund Request{% endif %}
+              </div>
+              <h3 style="margin:0; font-size:20px">{{ order.get_return_status_display }}</h3>
+            </div>
+            <div style="width:48px; height:48px; border-radius:12px; background:var(--kaam-milk); display:flex; align-items:center; justify-content:center; border:1px solid var(--kaam-line)">
+              {% if order.return_status == 'requested' %}<i class="ri-history-line" style="color:var(--kaam-saffron); font-size:24px"></i>
+              {% elif order.return_status == 'declined' %}<i class="ri-close-circle-line" style="color:var(--kaam-danger); font-size:24px"></i>
+              {% else %}<i class="ri-checkbox-circle-line" style="color:var(--kaam-success); font-size:24px"></i>{% endif %}
+            </div>
           </div>
           
-          <div style="font-size:13px;color:var(--kaam-soot);margin-top:12px;line-height:1.5">
-            <strong>Reason:</strong> {{ order.return_reason }}<br>
-            {% if order.return_type == 'exchange' %}
-            <strong>Requested Variant:</strong> <span class="mono">{{ order.return_exchange_variant }}</span><br>
+          <div style="background:var(--kaam-milk); border-radius:18px; padding:16px; border:1px solid var(--kaam-line)">
+            <div style="margin-bottom:12px">
+              <span style="font-size:11px; font-weight:700; color:var(--kaam-stone-dark); text-transform:uppercase">Reason</span>
+              <div style="font-size:14px; font-weight:600; margin-top:2px">{{ order.return_reason }}</div>
+            </div>
+
+            {% if order.formatted_return_variants %}
+            <div style="margin-bottom:12px">
+              <span style="font-size:11px; font-weight:700; color:var(--kaam-stone-dark); text-transform:uppercase">Items & Replacement</span>
+              <div style="margin-top:4px; display:flex; flex-direction:column; gap:6px">
+                {% for variant in order.formatted_return_variants %}
+                <div style="font-size:13px; font-weight:500; padding:8px 12px; background:var(--kaam-paper); border-radius:10px; border:1px solid var(--kaam-line)">
+                  {{ variant }}
+                </div>
+                {% endfor %}
+              </div>
+            </div>
             {% endif %}
-            <strong>Details:</strong> {{ order.return_description }}
+
+            {% if order.return_description %}
+            <div>
+              <span style="font-size:11px; font-weight:700; color:var(--kaam-stone-dark); text-transform:uppercase">Details</span>
+              <div style="font-size:13px; margin-top:2px; line-height:1.6">{{ order.return_description }}</div>
+            </div>
+            {% endif %}
           </div>
 
+          {% if order.return_proof_image %}
+          <div style="margin-top:16px; display:flex; align-items:center; gap:12px; padding:8px; background:var(--kaam-milk); border-radius:16px; border:1px solid var(--kaam-line)">
+             <img src="{{ order.return_proof_image.url }}" style="width:50px; height:50px; object-fit:cover; border-radius:10px">
+             <div style="font-size:12px; font-weight:600; color:var(--kaam-stone-dark)">Proof image attached</div>
+             <a href="{{ order.return_proof_image.url }}" target="_blank" style="margin-left:auto; font-size:11px; font-weight:700; color:var(--kaam-ink); text-decoration:underline">View Full</a>
+          </div>
+          {% endif %}
+
           {% if order.return_status == 'declined' %}
-          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--kaam-line)">
-            <strong style="color:var(--kaam-danger);font-size:12px">Seller Note:</strong>
-            <div style="font-size:13px;color:var(--kaam-danger);font-style:italic">"{{ order.return_declined_reason }}"</div>
+          <div style="margin-top:16px; padding:16px; background:rgba(161,70,47,0.06); border-radius:16px; border:1px solid rgba(161,70,47,0.1)">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px">
+              <i class="ri-error-warning-fill" style="color:var(--kaam-danger)"></i>
+              <span style="font-size:12px; font-weight:700; color:var(--kaam-danger)">Seller Feedback</span>
+            </div>
+            <div style="font-size:13px; color:var(--kaam-danger); font-style:italic">"{{ order.return_declined_reason }}"</div>
           </div>
           {% elif order.return_status == 'approved' %}
-          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--kaam-line)">
-            <strong style="color:var(--kaam-success);font-size:12px">Instructions:</strong>
-            <div style="font-size:13px;color:var(--kaam-stone-dark)">Your request is approved! Please package the item securely and ship it back to the seller, or wait for reverse pickup instructions if provided.</div>
+          <div style="margin-top:16px; padding:16px; background:rgba(46,106,79,0.06); border-radius:16px; border:1px solid rgba(46,106,79,0.1)">
+             <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px">
+               <i class="ri-checkbox-circle-fill" style="color:var(--kaam-success)"></i>
+               <span style="font-size:12px; font-weight:700; color:var(--kaam-success)">Next Steps</span>
+             </div>
+             <div style="font-size:13px; color:var(--kaam-success)">Your request has been approved! The seller will reach out shortly with instructions for the return/replacement process.</div>
           </div>
           {% endif %}
         </div>
@@ -518,21 +595,144 @@
 
   </div>
 </div>
+<style>
+  /* Premium Exchange UI */
+  .exchange-item-card {
+    border-color: var(--kaam-stone) !important;
+    background: var(--kaam-paper) !important; /* Changed from milk to paper for better contrast */
+  }
+  .exchange-item-card.selected {
+    border-color: var(--kaam-saffron) !important;
+    background: var(--kaam-saffron-pale) !important;
+    box-shadow: 0 4px 12px rgba(224, 161, 27, 0.08);
+  }
+  .exchange-item-card.selected .custom-checkbox {
+    background: var(--kaam-saffron) !important;
+    border-color: var(--kaam-saffron) !important;
+  }
+  .exchange-item-card.selected .variant-chips-wrap,
+  .exchange-item-card.selected .no-variants-msg {
+    max-height: 200px !important;
+    opacity: 1 !important;
+    margin-top: 14px;
+    padding-bottom: 4px;
+  }
+
+  .variant-option-chip {
+    background: var(--kaam-milk) !important; /* Better contrast inside paper-card */
+  }
+
+  .variant-option-chip:hover {
+    border-color: var(--kaam-saffron) !important;
+  }
+
+  /* Fix: Dynamic Active State for Dark Mode */
+  .variant-option-chip.active {
+    background: var(--kaam-saffron) !important;
+    color: #16110F !important; /* Force dark text on saffron for readability */
+    border-color: var(--kaam-saffron) !important;
+    box-shadow: 0 4px 12px rgba(224, 161, 27, 0.3);
+    transform: scale(1.05);
+    font-weight: 700;
+  }
+  .variant-option-chip.active .variant-check {
+    display: block !important;
+  }
+
+  .custom-checkbox i {
+    opacity: 0;
+    transform: scale(0.5);
+    transition: all 0.2s ease;
+  }
+  .exchange-item-check:checked + .custom-checkbox i {
+    opacity: 1;
+    transform: scale(1);
+  }
+</style>
+
 <script src="{% static 'js/utils.js' %}?v={% now 'U' %}"></script>
 <script>
+  function handleCardClick(card) {
+    const checkbox = card.querySelector('.exchange-item-check');
+    checkbox.checked = !checkbox.checked;
+    toggleExchangeCard(checkbox);
+  }
+
+  function toggleExchangeCard(checkbox) {
+    const card = checkbox.closest('.exchange-item-card');
+    if (checkbox.checked) {
+      card.classList.add('selected');
+    } else {
+      card.classList.remove('selected');
+      // Deselect all chips in this card
+      card.querySelectorAll('.variant-option-chip').forEach(c => c.classList.remove('active'));
+    }
+    updateExchangeVariantMap();
+  }
+
+  function selectExchangeVariant(chip) {
+    const parent = chip.closest('.variant-chips-grid');
+    
+    // Deselect siblings
+    parent.querySelectorAll('.variant-option-chip').forEach(c => c.classList.remove('active'));
+    
+    // Select this
+    chip.classList.add('active');
+    
+    // Auto-check the card if not checked
+    const card = chip.closest('.exchange-item-card');
+    const checkbox = card.querySelector('.exchange-item-check');
+    if (!checkbox.checked) {
+      checkbox.checked = true;
+      card.classList.add('selected');
+    }
+    
+    updateExchangeVariantMap();
+  }
+
+  function updateFileName(input, targetId) {
+    const fileNameEl = document.getElementById(targetId);
+    if (input.files && input.files[0]) {
+      fileNameEl.textContent = input.files[0].name;
+      fileNameEl.style.color = 'var(--kaam-ink)';
+    } else {
+      fileNameEl.textContent = 'Tap to upload photo';
+      fileNameEl.style.color = 'var(--kaam-stone-dark)';
+    }
+  }
+
   function updateExchangeVariantMap() {
     const out = {};
     document.querySelectorAll('.exchange-item-check').forEach(function (checkbox) {
       if (!checkbox.checked) return;
       const itemId = checkbox.value;
-      const select = document.querySelector('.exchange-variant-select[data-item-id="' + itemId + '"]');
-      if (select && select.value) {
-        out[itemId] = select.value;
+      const card = checkbox.closest('.exchange-item-card');
+      const activeChip = card.querySelector('.variant-option-chip.active');
+      
+      if (activeChip) {
+        out[itemId] = activeChip.dataset.value;
       }
     });
     const hidden = document.getElementById('exchange_variant_map');
     if (hidden) hidden.value = JSON.stringify(out);
   }
+
+  // Loading state for forms
+  document.querySelectorAll('form').forEach(form => {
+    form.addEventListener('submit', function(e) {
+      const btn = this.querySelector('button[type="submit"]');
+      if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.7';
+        btn.style.cursor = 'not-allowed';
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Sending...';
+        
+        // Safety timeout to re-enable if something goes wrong (though submission usually refreshes)
+        setTimeout(() => { if(btn) { btn.disabled = false; btn.innerHTML = originalHtml; btn.style.opacity = '1'; btn.style.cursor = 'pointer'; } }, 10000);
+      }
+    });
+  });
 </script>
 </body>
 </html>

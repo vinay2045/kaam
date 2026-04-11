@@ -2,6 +2,7 @@ import json
 from datetime import timedelta, date
 from decimal import Decimal
 import threading
+from html import escape
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -11,6 +12,7 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.db.models import Sum, Count, Avg, Max, Q
 from django.core.paginator import Paginator
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 
@@ -40,18 +42,22 @@ def get_unread_count(request):
     return request._unread_count_cache
 
 
-def send_order_email_async(subject, message, buyer_email):
+def send_order_email_async(subject, message, buyer_email, html_message=None):
     def _worker():
         try:
-            from django.core.mail import send_mail
+            from django.conf import settings
+            from django.core.mail import EmailMultiAlternatives
             import os
-            send_mail(
-                subject,
-                message,
-                os.environ.get('DEFAULT_FROM_EMAIL', 'orders@kaam.app'),
-                [buyer_email],
-                fail_silently=True,
+            from_email = os.environ.get('DEFAULT_FROM_EMAIL', getattr(settings, 'DEFAULT_FROM_EMAIL', 'orders@Order Karle.app'))
+            msg = EmailMultiAlternatives(
+                subject=subject,
+                body=message,
+                from_email=from_email,
+                to=[buyer_email],
             )
+            if html_message:
+                msg.attach_alternative(html_message, "text/html")
+            msg.send(fail_silently=True)
         except Exception as e:
             print(f"Failed to send email: {e}")
     threading.Thread(target=_worker, daemon=True).start()
@@ -198,7 +204,10 @@ def dashboard(request):
 
     # OPTIMIZATION: Combine multiple DB counts/sums into a single TRIP
     stats = all_orders.aggregate(
-        monthly_revenue_delivered=Sum('total_amount', filter=Q(status__iexact='delivered', created_at__gte=month_start)),
+        monthly_revenue_completed_or_exchanged=Sum(
+            'total_amount',
+            filter=Q(created_at__gte=month_start) & (Q(status__iexact='delivered') | Q(return_status='exchanged'))
+        ),
         monthly_refunded=Sum('return_refund_amount', filter=Q(return_status='refunded', updated_at__gte=month_start)),
         monthly_orders_count=Count('id', filter=Q(created_at__gte=month_start)),
         confirmed_count=Count('id', filter=Q(status__iexact='confirmed')),
@@ -208,7 +217,7 @@ def dashboard(request):
         delivered_count=Count('id', filter=Q(status__iexact='delivered'))
     )
 
-    monthly_revenue = (stats['monthly_revenue_delivered'] or 0) - (stats['monthly_refunded'] or 0)
+    monthly_revenue = (stats['monthly_revenue_completed_or_exchanged'] or 0) - (stats['monthly_refunded'] or 0)
     monthly_orders = stats['monthly_orders_count'] or 0
     confirmed_count = stats['confirmed_count'] or 0
     packed_count = stats['packed_count'] or 0
@@ -258,6 +267,91 @@ def dashboard(request):
     }
     return render(request, 'dashboard/index.html', context)
 
+@require_seller
+def orders_page(request):
+    seller = get_seller(request)
+    tab = request.GET.get('tab', 'new')
+
+    all_orders = seller.orders.all()
+    new_orders = all_orders.filter(status__iexact='placed', is_confirmed=False)
+    pending_orders = all_orders.filter(is_confirmed=True).exclude(status__iexact='delivered')
+    completed_orders = all_orders.filter(status__iexact='delivered').exclude(return_status__in=['requested', 'approved'])
+    return_orders = all_orders.filter(return_status__in=['requested', 'approved']).order_by('-updated_at')
+
+    if tab == 'new':
+        orders = new_orders
+    elif tab == 'pending':
+        orders = pending_orders
+    elif tab == 'completed':
+        orders = completed_orders
+    elif tab == 'returns':
+        orders = return_orders
+    else:
+        orders = all_orders
+
+    search_q = request.GET.get('q', '').strip()
+    status_filter = request.GET.get('status', '').strip()
+
+    if search_q:
+        orders = orders.filter(
+            Q(buyer_name__icontains=search_q) |
+            Q(buyer_whatsapp__icontains=search_q) |
+            Q(buyer_email__icontains=search_q) |
+            Q(order_id__icontains=search_q) |
+            Q(items__product__product_id__icontains=search_q) |
+            Q(items__product_title__icontains=search_q)
+        ).distinct()
+
+    if status_filter:
+        orders = orders.filter(status=status_filter)
+
+    stats = all_orders.aggregate(
+        confirmed_count=Count('id', filter=Q(status__iexact='confirmed')),
+        packed_count=Count('id', filter=Q(status__iexact='packed')),
+        shipped_count=Count('id', filter=Q(status__iexact='shipped')),
+        out_count=Count('id', filter=Q(status__iexact='out_for_delivery')),
+    )
+
+    notifications = seller.notifications.filter(is_read=False).order_by('-created_at')[:5]
+    manual_products = seller.products.filter(is_available=True).only('id', 'title', 'product_id', 'price')
+    page_num = request.GET.get('page', '1')
+    per_page_raw = request.GET.get('per_page', '25')
+    try:
+        per_page = int(per_page_raw)
+    except (TypeError, ValueError):
+        per_page = 25
+    per_page = max(5, min(per_page, 100))
+    orders_paginator = Paginator(orders, per_page)
+    page_obj = orders_paginator.get_page(page_num)
+
+    context = {
+        'seller': seller,
+        'tab': tab,
+        'search_q': search_q,
+        'status_filter': status_filter,
+        'orders': page_obj.object_list,
+        'page_obj': page_obj,
+        'orders_paginator': orders_paginator,
+        'per_page': per_page,
+        'order_counts': {
+            'new': new_orders.count(),
+            'pending': pending_orders.count(),
+            'completed': completed_orders.count(),
+            'returns': return_orders.count(),
+            'all': all_orders.count(),
+        },
+        'stats': {
+            'confirmed': stats['confirmed_count'] or 0,
+            'packed': stats['packed_count'] or 0,
+            'shipped': stats['shipped_count'] or 0,
+            'out_for_delivery': stats['out_count'] or 0,
+        },
+        'notifications': notifications,
+        'manual_products': manual_products,
+        'unread_count': seller.notifications.filter(is_read=False).count(),
+    }
+    return render(request, 'dashboard/orders.html', context)
+
 
 @require_seller
 def confirm_order(request, order_id):
@@ -287,9 +381,22 @@ def delete_order(request, order_id):
 def order_detail(request, order_id):
     seller = get_seller(request)
     order = get_object_or_404(Order, order_id=order_id, seller=seller)
+
+    allowed_keys = ['tab', 'status', 'q', 'page', 'per_page']
+    back_query = request.GET.copy()
+    for key in list(back_query.keys()):
+        if key not in allowed_keys:
+            back_query.pop(key, None)
+    if not back_query.get('tab'):
+        back_query['tab'] = 'all'
+    back_url = reverse('orders_page')
+    if back_query:
+        back_url += f"?{back_query.urlencode()}"
+
     return render(request, 'dashboard/order_detail.html', {
         'seller': seller,
         'order': order,
+        'back_url': back_url,
         'unread_count': seller.notifications.filter(is_read=False).count(),
     })
 
@@ -847,17 +954,27 @@ def seller_settings(request):
             facebook = request.POST.get('facebook_link', '').strip()
             whatsapp = request.POST.get('whatsapp_number', '').strip()
             upi_id = request.POST.get('upi_id', '').strip()
+            email = request.POST.get('email', '').strip()
             category = request.POST.get('category', '').strip()
+            delivery_days_raw = request.POST.get('order_delivery_days', '').strip()
 
             errors = []
             if not business_name:
                 errors.append('Business name is required.')
+            if email and '@' not in email:
+                errors.append('Enter a valid email address.')
             if not username or len(username) < 3:
                 errors.append('Username must be at least 3 characters.')
             if not username.replace('-', '').isalnum():
                 errors.append('Username can only contain letters, numbers, and hyphens.')
             if username != seller.username and Seller.objects.filter(username=username).exists():
                 errors.append('This username is already taken.')
+            try:
+                delivery_days = int(delivery_days_raw or seller.order_delivery_days or 3)
+            except (TypeError, ValueError):
+                delivery_days = 0
+            if delivery_days < 1 or delivery_days > 30:
+                errors.append('Order delivery days must be between 1 and 30.')
 
             if errors:
                 context = {
@@ -869,11 +986,13 @@ def seller_settings(request):
             old_username = seller.username
             seller.business_name = business_name
             seller.username = username
+            seller.email = email
             seller.instagram_link = instagram
             seller.facebook_link = facebook
             seller.whatsapp_number = whatsapp
             seller.upi_id = upi_id
             seller.category = category
+            seller.order_delivery_days = delivery_days
             seller.save()
             messages.success(request, 'Profile updated successfully.')
 
@@ -1110,25 +1229,194 @@ def storefront(request, username):
             # Construct a dynamic tracking URL based on current host
             host = request.get_host()
             trace_url = f"{request.scheme}://{host}/trace/{order.order_id}/"
+            screenshot_url = request.build_absolute_uri(order.payment_screenshot.url) if order.payment_screenshot else ""
             
-            item_lines = "\n".join([f"- {it.quantity}x {it.product_title} (₹{float(it.unit_price)})" for it in order.items.all()])
-            
+            item_lines = "\n".join([f"- {it.quantity}x {it.product_title} (₹{float(it.unit_price):,.2f})" for it in order.items.all()])
+            payment_label = dict(Order.PAYMENT_CHOICES).get(order.payment_method, order.payment_method).upper()
+            greeting_name = (order.buyer_name or "Customer").strip()
+            address_parts = [
+                order.address_line1,
+                order.address_line2,
+                f"{order.city}, {order.state} - {order.pincode}",
+                order.country,
+            ]
+            full_address = ", ".join([part.strip() for part in address_parts if part and str(part).strip()])
+            seller_phone = (seller.whatsapp_number or "").strip()
+            seller_digits = "".join(ch for ch in seller_phone if ch.isdigit())
+            seller_wa_link = f"https://wa.me/{seller_digits}" if seller_digits else ""
+            seller_insta = (seller.instagram_link or "").strip()
+            seller_facebook = (seller.facebook_link or "").strip()
+            seller_email = (seller.email or "").strip()
+
+            safe_store = escape(seller.business_name)
+            safe_track_url = escape(trace_url)
+            safe_order_id = escape(order.order_id)
+            safe_payment = escape(payment_label)
+            safe_total = f"{float(order.total_amount):,.2f}"
+            safe_utr = escape(order.utr_number or "Not provided")
+            safe_name = escape(order.buyer_name or "-")
+            safe_email = escape(order.buyer_email or "-")
+            safe_phone = escape(order.buyer_whatsapp or "-")
+            safe_instagram = escape(order.buyer_instagram or "-")
+            safe_address = escape(full_address or "-")
+            safe_screenshot_url = escape(screenshot_url)
+            safe_seller_phone = escape(seller_phone or "-")
+            safe_seller_wa_link = escape(seller_wa_link)
+            safe_seller_insta = escape(seller_insta)
+            safe_seller_facebook = escape(seller_facebook)
+            safe_seller_email = escape(seller_email)
+
             message = (
-                f"Hi {order.buyer_name},\n\n"
-                f"Thank you for your purchase from {seller.business_name}!\n\n"
-                f"--- ORDER SUMMARY ---\n"
+                f"Hi {greeting_name},\n\n"
+                f"Your order has been confirmed by {seller.business_name}.\n\n"
+                f"Order Summary\n"
                 f"Order ID: #{order.order_id}\n"
-                f"Payment Method: {order.payment_method.upper()}\n"
-                f"Total Amount: ₹{order.total_amount}\n\n"
+                f"Payment Method: {payment_label}\n"
+                f"Total Amount: ₹{float(order.total_amount):,.2f}\n\n"
                 f"Items Ordered:\n{item_lines}\n\n"
-                f"You can track the live shipping status of your order anytime here:\n"
-                f"{trace_url}\n\n"
-                f"Thank you,\n"
-                f"Powered by Kaam Commerce"
+                f"Buyer Details\n"
+                f"Name: {order.buyer_name or '-'}\n"
+                f"Email: {order.buyer_email or '-'}\n"
+                f"Phone: {order.buyer_whatsapp or '-'}\n"
+                f"Instagram: {order.buyer_instagram or '-'}\n\n"
+                f"Delivery Address\n"
+                f"{full_address or '-'}\n\n"
+                f"Payment Details\n"
+                f"UTR: {order.utr_number or 'Not provided'}\n"
+                f"Payment Proof: {screenshot_url or 'Not uploaded'}\n\n"
+                f"Track your order:\n{trace_url}\n\n"
+                f"Seller Contact\n"
+                f"Phone/WhatsApp: {seller_phone or '-'}\n"
+                f"{'Email: ' + seller_email if seller_email else ''}\n"
+                f"{'WhatsApp Link: ' + seller_wa_link if seller_wa_link else ''}\n"
+                f"{'Instagram: ' + seller_insta if seller_insta else ''}\n"
+                f"{'Facebook: ' + seller_facebook if seller_facebook else ''}\n\n"
+                f"Thank you for shopping with {seller.business_name}.\n"
+                f"Order Karle Commerce"
             )
+
+            item_rows_html = "".join(
+                [
+                    (
+                        f"<tr>"
+                        f"<td style='padding:10px 0;border-bottom:1px solid #ECECEC;color:#1F1F1F;font-size:14px;'>"
+                        f"{escape(it.product_title)}"
+                        f"<div style='color:#666;font-size:12px;margin-top:2px;'>Qty {it.quantity}</div>"
+                        f"</td>"
+                        f"<td style='padding:10px 0;border-bottom:1px solid #ECECEC;color:#1F1F1F;font-size:14px;text-align:right;font-family:Arial,sans-serif;'>"
+                        f"₹{float(it.subtotal):,.2f}"
+                        f"</td>"
+                        f"</tr>"
+                    )
+                    for it in order.items.all()
+                ]
+            )
+
+            html_message = f"""
+<!doctype html>
+<html>
+<body style="margin:0;padding:0;background:#F6F8FC;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#F6F8FC;padding:24px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:#FFFFFF;border:1px solid #E6E6E6;border-radius:12px;overflow:hidden;">
+          <tr>
+            <td style="padding:22px 24px;background:#111111;color:#FFFFFF;">
+              <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#C8C8C8;">Order Confirmation</div>
+              <div style="font-size:24px;line-height:1.35;font-weight:700;margin-top:6px;">Your order is confirmed</div>
+              <div style="font-size:13px;color:#E2E2E2;margin-top:8px;">{safe_store}</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px;">
+              <p style="margin:0 0 16px 0;font-size:15px;color:#1F1F1F;">Hi {escape(greeting_name)},</p>
+              <p style="margin:0 0 20px 0;font-size:14px;line-height:1.65;color:#444;">
+                Thank you for your purchase. We have received your order and started processing it.
+              </p>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:16px;">
+                <tr><td style="padding:0 0 8px 0;font-size:13px;color:#666;">Order ID</td><td style="padding:0 0 8px 0;font-size:13px;color:#111;text-align:right;font-family:Arial,sans-serif;">#{safe_order_id}</td></tr>
+                <tr><td style="padding:0 0 8px 0;font-size:13px;color:#666;">Payment</td><td style="padding:0 0 8px 0;font-size:13px;color:#111;text-align:right;">{safe_payment}</td></tr>
+                <tr><td style="padding:0 0 8px 0;font-size:13px;color:#666;">UTR</td><td style="padding:0 0 8px 0;font-size:13px;color:#111;text-align:right;">{safe_utr}</td></tr>
+                <tr><td style="padding:0 0 8px 0;font-size:13px;color:#666;">Total</td><td style="padding:0 0 8px 0;font-size:15px;color:#111;text-align:right;font-weight:700;font-family:Arial,sans-serif;">₹{safe_total}</td></tr>
+              </table>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:18px;">
+                <tr>
+                  <td style="font-size:12px;font-weight:700;color:#666;letter-spacing:.06em;text-transform:uppercase;padding-bottom:6px;">Items</td>
+                </tr>
+                {item_rows_html}
+              </table>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 18px 0;border:1px solid #ECECEC;border-radius:10px;">
+                <tr>
+                  <td style="padding:12px 14px;background:#FAFAFA;border-bottom:1px solid #ECECEC;font-size:12px;font-weight:700;color:#555;letter-spacing:.05em;text-transform:uppercase;">
+                    Buyer Details
+                  </td>
+                </tr>
+                <tr><td style="padding:8px 14px;font-size:13px;color:#222;">Name: {safe_name}</td></tr>
+                <tr><td style="padding:0 14px 8px 14px;font-size:13px;color:#222;">Email: {safe_email}</td></tr>
+                <tr><td style="padding:0 14px 8px 14px;font-size:13px;color:#222;">Phone: {safe_phone}</td></tr>
+                <tr><td style="padding:0 14px 12px 14px;font-size:13px;color:#222;">Instagram: {safe_instagram}</td></tr>
+              </table>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 18px 0;border:1px solid #ECECEC;border-radius:10px;">
+                <tr>
+                  <td style="padding:12px 14px;background:#FAFAFA;border-bottom:1px solid #ECECEC;font-size:12px;font-weight:700;color:#555;letter-spacing:.05em;text-transform:uppercase;">
+                    Delivery Address
+                  </td>
+                </tr>
+                <tr><td style="padding:10px 14px 12px 14px;font-size:13px;color:#222;line-height:1.55;">{safe_address}</td></tr>
+              </table>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 18px 0;border:1px solid #ECECEC;border-radius:10px;">
+                <tr>
+                  <td style="padding:12px 14px;background:#FAFAFA;border-bottom:1px solid #ECECEC;font-size:12px;font-weight:700;color:#555;letter-spacing:.05em;text-transform:uppercase;">
+                    Payment Proof
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 14px 12px 14px;font-size:13px;color:#222;">
+                    {"<a href='" + safe_screenshot_url + "' style='color:#1A73E8;text-decoration:none;font-weight:600;'>View payment screenshot</a>" if screenshot_url else "Not uploaded"}
+                  </td>
+                </tr>
+              </table>
+              <table role="presentation" cellspacing="0" cellpadding="0" style="margin:6px 0 4px 0;">
+                <tr>
+                  <td>
+                    <a href="{safe_track_url}" style="display:inline-block;background:#1A73E8;color:#FFFFFF;text-decoration:none;font-size:14px;font-weight:700;padding:11px 18px;border-radius:8px;">
+                      Track Your Order
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:16px 0 4px 0;border:1px solid #ECECEC;border-radius:10px;">
+                <tr>
+                  <td style="padding:12px 14px;background:#FAFAFA;border-bottom:1px solid #ECECEC;font-size:12px;font-weight:700;color:#555;letter-spacing:.05em;text-transform:uppercase;">
+                    Seller Contact
+                  </td>
+                </tr>
+                <tr><td style="padding:10px 14px 6px 14px;font-size:13px;color:#222;">Phone/WhatsApp: {safe_seller_phone}</td></tr>
+                <tr><td style="padding:0 14px 6px 14px;font-size:13px;">{"<a href='https://mail.google.com/mail/?view=cm&fs=1&to=" + safe_seller_email + "' target='_blank' rel='noopener noreferrer' style='color:#1A73E8;text-decoration:none;'>Email: " + safe_seller_email + "</a>" if seller_email else "<span style='color:#777;'>Email not provided</span>"}</td></tr>
+                <tr><td style="padding:0 14px 6px 14px;font-size:13px;">{"<a href='" + safe_seller_wa_link + "' style='color:#1A73E8;text-decoration:none;'>Chat on WhatsApp</a>" if seller_wa_link else "<span style='color:#777;'>WhatsApp link unavailable</span>"}</td></tr>
+                <tr><td style="padding:0 14px 6px 14px;font-size:13px;">{"<a href='" + safe_seller_insta + "' style='color:#1A73E8;text-decoration:none;'>Instagram</a>" if seller_insta else "<span style='color:#777;'>Instagram not provided</span>"}</td></tr>
+                <tr><td style="padding:0 14px 12px 14px;font-size:13px;">{"<a href='" + safe_seller_facebook + "' style='color:#1A73E8;text-decoration:none;'>Facebook</a>" if seller_facebook else "<span style='color:#777;'>Facebook not provided</span>"}</td></tr>
+              </table>
+              <p style="margin:14px 0 0 0;font-size:12px;color:#666;word-break:break-all;">
+                If the button does not work, open this link: {safe_track_url}
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 24px;border-top:1px solid #ECECEC;background:#FAFAFA;color:#666;font-size:12px;">
+              This is an automated confirmation from Order Karle Commerce.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+"""
             
             # Avoid blocking checkout response while sending email
-            send_order_email_async(subject, message, buyer_email)
+            send_order_email_async(subject, message, buyer_email, html_message=html_message)
 
 
         return JsonResponse({'success': True, 'order_id': order.order_id})
@@ -1303,7 +1591,6 @@ def trace_order_detail(request, order_id):
 
     exchange_options = []
     if order and getattr(order, 'items', None):
-        import json
         for item in order.items.all():
             item_options = []
             if item.product and getattr(item.product, 'variants_json', None):
@@ -1359,13 +1646,15 @@ def api_realtime_analytics(request):
     all_orders = seller.orders.all()
     new_orders = all_orders.filter(status='placed', is_confirmed=False)
 
-    monthly_revenue_delivered = all_orders.filter(
-        status='delivered', created_at__gte=month_start
+    monthly_revenue_completed_or_exchanged = all_orders.filter(
+        created_at__gte=month_start
+    ).filter(
+        Q(status='delivered') | Q(return_status='exchanged')
     ).aggregate(t=Sum('total_amount'))['t'] or 0
     monthly_refunded = all_orders.filter(
         return_status='refunded', updated_at__gte=month_start
     ).aggregate(t=Sum('return_refund_amount'))['t'] or 0
-    monthly_revenue = monthly_revenue_delivered - monthly_refunded
+    monthly_revenue = monthly_revenue_completed_or_exchanged - monthly_refunded
     monthly_orders = all_orders.filter(created_at__gte=month_start).count()
 
     latest = new_orders.order_by('-created_at').first()
@@ -1770,7 +2059,7 @@ def import_orders_csv(request):
 
                 # Everything is valid, let's create
                 csv_order_id = row.get('Order ID', '').strip()
-                if csv_order_id and not csv_order_id.startswith('ORD-'):
+                if csv_order_id and not re.fullmatch(r'\d{8}', csv_order_id):
                     csv_order_id = None
                 
                 if csv_order_id and Order.objects.filter(order_id=csv_order_id, seller=seller).exists():

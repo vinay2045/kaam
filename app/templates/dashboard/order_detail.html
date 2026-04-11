@@ -3,10 +3,10 @@
 {% load kaam_filters %}
 
 {% block meta %}
-<title>Order {{ order.order_id }} — Kaam</title>
+<title>Order {{ order.order_id }} — Order Karle</title>
 {% endblock %}
 
-{% block mob_dash_active %}active{% endblock %}
+{% block mob_orders_active %}active{% endblock %}
 
 {% block seller_css %}
 <style>
@@ -41,7 +41,7 @@
         <div class="order-detail-sub">{{ order.created_at|date:"d M Y, h:i A" }} · {{ order.get_status_display }}</div>
       </div>
       <div class="order-detail-actions">
-        <a href="{% url 'dashboard' %}?tab=all&q={{ order.order_id }}" class="btn btn-ghost btn-sm">← Back to Orders</a>
+        <a href="{{ back_url }}" class="btn btn-ghost btn-sm">← Back to Orders</a>
         <span class="badge {{ order.status|status_badge_class }}">{{ order.get_status_display }}</span>
       </div>
     </div>

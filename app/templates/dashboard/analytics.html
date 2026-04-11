@@ -2,7 +2,7 @@
 {% load static %}
 {% load kaam_filters %}
 
-{% block meta %}<title>Analytics — Kaam</title>{% endblock %}
+{% block meta %}<title>Analytics — Order Karle</title>{% endblock %}
 {% block mob_anal_active %}active{% endblock %}
 
 {% block seller_css %}<link rel="stylesheet" href="{% static 'css/analytics.css' %}">{% endblock %}
@@ -11,7 +11,7 @@
 <div class="analytics-main analytics-page">
 
   <!-- Header -->
-  <div class="analytics-header" style="display:flex; justify-content:space-between; align-items:flex-end; gap:20px">
+  <div class="analytics-header">
     <div>
       <div class="eyebrow">Business Intelligence</div>
       <h1 class="analytics-title">Your Store Report</h1>
@@ -19,12 +19,14 @@
         <span class="analytics-sub-live">
           <span class="analytics-sub-dot"></span> Live
         </span>
-        Auto-refreshes every 30s ·
-        <span id="last-updated">Updated just now</span>
+        <span class="analytics-sub-sep" aria-hidden="true">•</span>
+        <span id="last-updated" class="analytics-sub-updated">Updated now</span>
+        <span class="analytics-sub-sep" aria-hidden="true">•</span>
+        <span class="analytics-sub-refresh">Auto-refresh every 30s</span>
       </div>
     </div>
-    <div style="padding-bottom:10px; position:relative">
-      <button type="button" onclick="toggleExportMenu(event)" class="btn btn-ghost" style="border:1.5px solid var(--kaam-line-strong); padding:10px 28px; font-size:12px; font-weight:800; background:var(--kaam-milk); border-radius:100px; display:flex; align-items:center">
+    <div class="analytics-export-wrap">
+      <button type="button" onclick="toggleExportMenu(event)" class="btn btn-ghost analytics-export-btn">
         <i class="ri-download-line" style="margin-right:10px; font-size:14px"></i> Export Data
         <i class="ri-arrow-down-s-line" style="margin-left:8px; font-size:14px; opacity:0.6"></i>
       </button>

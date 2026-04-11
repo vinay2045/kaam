@@ -550,6 +550,7 @@ function initPaymentUpload() {
 async function submitOrder() {
   if (isSubmitting) return;
   if (orderData.payment_method === 'online' && !validateStep(5)) return;
+  if (currentStep === 5) collectStepData(5);
   isSubmitting = true;
   const submitBtn = document.getElementById('submit-btn');
   const step4Btn = document.getElementById('step4-next-btn');

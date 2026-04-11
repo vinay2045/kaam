@@ -15,6 +15,7 @@ urlpatterns = [
     path('dashboard/analytics/', views.analytics, name='analytics'),
     path('dashboard/settings/', views.seller_settings, name='settings'),
     path('dashboard/feedbacks/', views.feedbacks, name='feedbacks'),
+    path('dashboard/orders/', views.orders_page, name='orders_page'),
     path('dashboard/orders/<str:order_id>/status/', views.update_order_status, name='update_order_status'),
     path('dashboard/orders/<str:order_id>/confirm/', views.confirm_order, name='confirm_order'),
     path('dashboard/orders/<str:order_id>/view/', views.order_detail, name='order_detail'),

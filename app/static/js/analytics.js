@@ -5,6 +5,7 @@
 
 let weeklyOrdersChart = null;
 let weeklyRevenueChart = null;
+let lastChartMobileMode = null;
 
 const CHART_COLORS = {
   saffron: '#E0A11B',
@@ -27,14 +28,31 @@ function initWeeklyCharts() {
   const ordersCanvas = document.getElementById('weeklyOrdersChart');
   const revenueCanvas = document.getElementById('weeklyRevenueChart');
   if (!ordersCanvas || !revenueCanvas) return;
+  if (weeklyOrdersChart) {
+    weeklyOrdersChart.destroy();
+    weeklyOrdersChart = null;
+  }
+  if (weeklyRevenueChart) {
+    weeklyRevenueChart.destroy();
+    weeklyRevenueChart = null;
+  }
 
   const labels = window.DAILY_ORDERS?.map(d => d.day) || [];
   const orderCounts = window.DAILY_ORDERS?.map(d => d.count) || [];
   const revAmounts = window.DAILY_REVENUE?.map(d => d.amount) || [];
+  const isMobile = window.matchMedia('(max-width: 640px)').matches;
+  lastChartMobileMode = isMobile;
+  const desiredTickCount = isMobile ? 4 : 6;
+  const xTickStep = Math.max(1, Math.ceil(labels.length / desiredTickCount));
 
   const commonOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    layout: {
+      padding: isMobile
+        ? { top: 2, right: 2, bottom: 0, left: 4 }
+        : { top: 4, right: 6, bottom: 2, left: 10 }
+    },
     interaction: {
       mode: 'index',
       intersect: false,
@@ -54,21 +72,29 @@ function initWeeklyCharts() {
       x: {
         grid: { display: false },
         ticks: { 
-          font: { family: "'IBM Plex Mono', monospace", size: 10 }, 
+          font: { family: "'IBM Plex Mono', monospace", size: isMobile ? 9 : 10 },
           color: '#7A6857',
           maxRotation: 0,
-          maxTicksLimit: 6,
-          autoSkip: true
+          maxTicksLimit: desiredTickCount,
+          autoSkip: true,
+          padding: isMobile ? 4 : 6,
+          callback: (value, index) => {
+            const label = labels[index] || '';
+            if (index === 0 || index === labels.length - 1 || index % xTickStep === 0) {
+              return label;
+            }
+            return '';
+          }
         },
         border: { display: false },
       },
       y: {
         grid: { color: 'rgba(215,201,182,0.3)', drawBorder: false, borderDash: [4, 4] },
         ticks: { 
-          font: { family: "'IBM Plex Mono', monospace", size: 10 }, 
+          font: { family: "'IBM Plex Mono', monospace", size: isMobile ? 9 : 10 }, 
           color: '#7A6857', 
-          maxTicksLimit: 5,
-          padding: 8
+          maxTicksLimit: isMobile ? 4 : 5,
+          padding: isMobile ? 4 : 8
         },
         border: { display: false },
         beginAtZero: true,
@@ -95,11 +121,11 @@ function initWeeklyCharts() {
         data: orderCounts,
         borderColor: CHART_COLORS.saffron,
         backgroundColor: gradientOrders,
-        borderWidth: 2.5,
+        borderWidth: isMobile ? 2 : 2.5,
         fill: true,
         tension: 0.4,
         pointRadius: 0,
-        pointHoverRadius: 6,
+        pointHoverRadius: isMobile ? 4 : 6,
         pointBackgroundColor: CHART_COLORS.saffron,
       }]
     },
@@ -120,11 +146,11 @@ function initWeeklyCharts() {
         data: revAmounts,
         borderColor: CHART_COLORS.leaf,
         backgroundColor: gradientRev,
-        borderWidth: 2.5,
+        borderWidth: isMobile ? 2 : 2.5,
         fill: true,
         tension: 0.4,
         pointRadius: 0,
-        pointHoverRadius: 6,
+        pointHoverRadius: isMobile ? 4 : 6,
         pointBackgroundColor: CHART_COLORS.leaf,
       }]
     },
@@ -237,6 +263,12 @@ function pollAnalyticsPage() {
 // ─── INIT ───
 document.addEventListener('DOMContentLoaded', () => {
   initWeeklyCharts();
+  window.addEventListener('resize', () => {
+    const isMobile = window.matchMedia('(max-width: 640px)').matches;
+    if (isMobile !== lastChartMobileMode) {
+      initWeeklyCharts();
+    }
+  });
   renderCategoryBars();
   renderStarBars();
   renderPaymentBars();

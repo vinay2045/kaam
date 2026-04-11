@@ -3,11 +3,21 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 import random
 import string
+import secrets
+import json
 
 def generate_order_id():
-    ts = timezone.now().strftime('%Y%m%d%H%M%S')
-    rand = str(random.randint(100, 999))
-    return f"ORD-{ts}-{rand}"
+    # 8-digit numeric ID (no prefix, no separators), retry on collision.
+    for _ in range(25):
+        candidate = str(secrets.randbelow(90000000) + 10000000)
+        try:
+            if not Order.objects.filter(order_id=candidate).exists():
+                return candidate
+        except Exception:
+            # During startup/migrations table may not be queryable; return candidate.
+            return candidate
+    # Extremely unlikely fallback if many collisions happen.
+    return str(secrets.randbelow(90000000) + 10000000)
 
 def generate_product_id():
     return str(random.randint(1000, 9999))
@@ -28,6 +38,8 @@ class Seller(models.Model):
     allow_cod = models.BooleanField(default=True)
     allow_refunds = models.BooleanField(default=True)
     allow_exchanges = models.BooleanField(default=True)
+    order_delivery_days = models.PositiveSmallIntegerField(default=3)
+    email = models.EmailField(blank=True, help_text="Business email for contact")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -127,6 +139,20 @@ class Order(models.Model):
 
     def __str__(self):
         return self.order_id
+
+    @property
+    def formatted_return_variants(self):
+        """Returns a list of human-readable variant selections for exchange."""
+        if not self.return_exchange_variant:
+            return None
+        try:
+            data = json.loads(self.return_exchange_variant)
+            if isinstance(data, dict):
+                # Returns individual items as a list of strings
+                return [f"{v}" for k, v in data.items()]
+            return [str(data)]
+        except:
+            return [self.return_exchange_variant]
 
 
 class OrderItem(models.Model):

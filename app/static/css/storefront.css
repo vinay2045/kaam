@@ -135,6 +135,80 @@
   border-radius: 999px;
   padding: 5px 12px;
 }
+.sf-delivery-status {
+  margin: 0 auto 16px;
+  max-width: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--kaam-soot);
+  background: var(--kaam-saffron-pale);
+  border: 1px solid var(--kaam-saffron);
+  border-radius: 12px;
+  padding: 10px 12px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  animation: sfStatusGlow 2.4s ease-in-out infinite;
+}
+.sf-delivery-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--kaam-saffron);
+  animation: sfPulse 2s infinite;
+}
+.sf-delivery-status::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 25%, rgba(255,255,255,0.18) 50%, transparent 75%);
+  transform: translateX(-130%);
+  animation: sfStatusShimmer 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes sfPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+@keyframes sfStatusGlow {
+  0%, 100% { box-shadow: 0 0 0 rgba(224, 161, 27, 0); }
+  50% { box-shadow: 0 0 0 2px rgba(224, 161, 27, 0.18); }
+}
+@keyframes sfStatusShimmer {
+  0%, 30% { transform: translateX(-130%); }
+  70%, 100% { transform: translateX(130%); }
+}
+.sf-social-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+.sf-social-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--kaam-ink);
+  background: var(--kaam-paper);
+  border: 1px solid var(--kaam-line-strong);
+  border-radius: 999px;
+  padding: 6px 12px;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+.sf-social-link:hover {
+  border-color: var(--kaam-saffron);
+  background: var(--kaam-saffron-soft);
+}
 
 /* ─── FORM CARD ─── */
 .sf-form-card {
@@ -642,6 +716,12 @@
   .sf-step-subtitle { font-size: 13px; }
   .sf-welcome-h { font-size: 26px; }
   .sf-welcome-features { flex-direction: column; gap: 8px; align-items: flex-start; }
+  .sf-delivery-status {
+    justify-content: flex-start;
+    text-align: left;
+    font-size: 12px;
+    line-height: 1.45;
+  }
   .sf-form-footer { flex-direction: column; gap: 10px; }
   .sf-form-footer .btn { width: 100%; justify-content: center; }
   .payment-options { gap: 10px; }

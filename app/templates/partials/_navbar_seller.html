@@ -6,7 +6,7 @@
     <div class="seller-nav-brand">
       <a href="{% url 'dashboard' %}" class="kaam-wordmark">
         <div class="kaam-wordmark-stamp">
-          <span class="kaam-wordmark-text">kaam</span>
+          <span class="kaam-wordmark-text">Order Karle</span>
         </div>
       </a>
       <div class="seller-nav-brand-sep"></div>
@@ -24,6 +24,10 @@
       <a href="{% url 'dashboard' %}" class="seller-nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
         Dashboard
+      </a>
+      <a href="{% url 'orders_page' %}" class="seller-nav-link {% if request.resolver_match.url_name == 'orders_page' or request.resolver_match.url_name == 'order_detail' %}active{% endif %}">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h6M7 16h4"/></svg>
+        Orders
       </a>
       <a href="{% url 'product_list' %}" class="seller-nav-link {% if request.resolver_match.url_name == 'product_list' or request.resolver_match.url_name == 'product_add' or request.resolver_match.url_name == 'product_edit' %}active{% endif %}">
         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 3h18l-2 13H5L3 3z"/><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg>

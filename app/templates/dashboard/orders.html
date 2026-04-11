@@ -1,0 +1,724 @@
+{% extends "base/base_seller.html" %}
+{% load static %}
+{% load kaam_filters %}
+
+{% block meta %}
+<title>Orders — Order Karle</title>
+{% endblock %}
+
+{% block mob_orders_active %}active{% endblock %}
+
+{% block seller_css %}
+<style>
+  .orders-compact { --fs-11: 10px; --fs-12: 11px; --fs-13: 12px; }
+  .orders-compact .orders-title { font-size: 30px; }
+  .orders-compact .tab-btn { font-size: 15px; padding: 11px 18px; }
+  .orders-compact .tab-count { font-size: 11px; min-width: 20px; height: 20px; }
+  .orders-compact .order-buyer { font-size: 17px; }
+  .orders-compact .order-address,
+  .orders-compact .order-products { font-size: 13px; }
+  .orders-compact .orders-table th { font-size: 12px; }
+  .orders-compact .orders-table td { font-size: 13px; }
+  .orders-compact .badge { font-size: 11px; }
+  .orders-compact .compact-action-row { display:flex; gap:8px; flex-wrap:wrap; }
+  .orders-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+    padding: 12px;
+    align-items: center;
+    justify-content: center;
+  }
+  .orders-modal-card {
+    width: min(100%, 520px);
+    max-height: 90vh;
+    background: var(--kaam-milk);
+    border: 1px solid var(--kaam-line-strong);
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: var(--shadow-lift);
+  }
+  .orders-modal-head {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--kaam-line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .orders-modal-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--kaam-ink);
+  }
+  .orders-modal-body {
+    padding: 12px 14px;
+    overflow-y: auto;
+  }
+  .orders-modal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .orders-modal-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+  .orders-modal-foot {
+    position: sticky;
+    bottom: 0;
+    background: var(--kaam-paper);
+    border-top: 1px solid var(--kaam-line);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .orders-item-row {
+    background: var(--kaam-paper);
+    border: 1px solid var(--kaam-line);
+    border-radius: var(--radius-md);
+    padding: 8px;
+    margin-bottom: 8px;
+  }
+  #bulk-actions-banner .select-all-label {
+    background: var(--kaam-paper-dark) !important;
+    color: var(--kaam-ink) !important;
+    border-color: var(--kaam-line-strong) !important;
+    box-shadow: inset 0 0 0 1px var(--kaam-line), 0 1px 0 rgba(0,0,0,0.12);
+  }
+  #bulk-actions-banner .select-all-label:hover {
+    background: var(--kaam-paper) !important;
+  }
+  #bulk-actions-banner .select-all-label input {
+    accent-color: var(--kaam-saffron);
+  }
+  #bulk-actions-banner .select-all-label span {
+    color: var(--kaam-ink) !important;
+  }
+  .orders-selection-mode-sticky {
+    position: sticky;
+    top: 70px;
+    z-index: 30;
+  }
+  @media (max-width: 640px) {
+    .orders-compact .dashboard-main { padding: 10px 12px 84px !important; }
+    .orders-compact .order-section { padding: 10px !important; border-radius: 12px !important; }
+    .orders-compact .orders-header { margin-bottom: 8px !important; }
+    .orders-compact .orders-title { font-size: 24px !important; line-height: 1.1 !important; margin: 0 0 8px 0 !important; }
+    .orders-compact .tab-list { gap: 0 !important; }
+    .orders-compact .tab-btn { font-size: 10px !important; padding: 8px 10px !important; min-width: 86px !important; text-align:center !important; border-radius: 0 !important; }
+    .orders-compact .tab-count { font-size: 9px !important; min-width: 16px !important; height: 16px !important; }
+    .orders-compact #orders-search-form { gap: 6px !important; margin-bottom: 8px !important; }
+    .orders-compact #orders-search-form .input-prefix-wrap { min-width: 100% !important; max-width: 100% !important; }
+    .orders-compact #orders-search-input,
+    .orders-compact .orders-per-page-input { font-size: 10px !important; height: 34px !important; padding-top: 6px !important; padding-bottom: 6px !important; }
+    .orders-compact .orders-per-page-wrap { width: 100% !important; }
+    .orders-compact .orders-per-page-label { font-size: 9px !important; letter-spacing: 0.04em !important; }
+    .orders-compact .compact-action-row { width: 100%; display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px !important; }
+    .orders-compact .compact-action-row > * { min-height: 28px !important; font-size: 9px !important; padding: 4px 6px !important; border-radius: 14px !important; letter-spacing: 0 !important; }
+    .orders-compact .eyebrow { font-size: 9px !important; margin: 8px 0 6px !important; }
+    .orders-compact .delivery-strip { gap: 6px !important; margin-bottom: 10px !important; padding: 6px !important; }
+    .orders-compact .dispatch-chip { font-size: 9px !important; padding: 6px 8px !important; min-height: auto !important; }
+    .orders-compact .chip-count { font-size: 9px !important; min-width: 14px !important; height: 14px !important; }
+    .orders-compact .orders-table-wrap { display: none; }
+    .orders-compact .order-cards { gap: 10px !important; }
+    .orders-compact .order-card { padding: 10px !important; border-radius: 12px !important; border-width: 1px !important; }
+    .orders-compact .order-card * { line-height: 1.4; }
+    .orders-compact .order-card .badge { font-size: 9px !important; padding: 2px 7px !important; }
+    .orders-compact .order-card .btn { font-size: 11px !important; padding: 7px 10px !important; min-height: 34px !important; }
+    .orders-compact .order-card select.input-field { font-size: 11px !important; min-height: 34px !important; padding-top: 6px !important; padding-bottom: 6px !important; }
+    .orders-compact .order-card [style*="font-size:13px"] { font-size: 13px !important; }
+    .orders-compact .order-card [style*="font-size:11px"] { font-size: 11px !important; }
+    .orders-compact .order-card [style*="font-size:10px"] { font-size: 10px !important; }
+    .orders-compact .order-card [style*="font-size:9px"] { font-size: 9px !important; }
+    .orders-compact .order-card [style*="width:32px;height:32px"] { width: 30px !important; height: 30px !important; }
+    .orders-compact .order-card [style*="margin-top:7px"] { margin-top: 10px !important; }
+    .orders-compact .order-card [style*="margin-top:6px"] { margin-top: 8px !important; }
+    .orders-compact .order-card [style*="gap:6px"] { gap: 8px !important; }
+    .orders-compact #bulk-actions-banner { font-size: 9px !important; padding: 6px 8px !important; gap: 6px !important; margin-bottom: 8px !important; }
+    .orders-compact #bulk-actions-banner .btn { font-size: 9px !important; padding: 5px 7px !important; min-height: 28px !important; }
+    .orders-modal-overlay { padding: 6px; align-items: center; }
+    .orders-modal-card { width: min(100%, 340px); max-height: 72vh; border-radius: 12px; }
+    .orders-modal-head { padding: 8px 10px; }
+    .orders-modal-body { padding: 8px 10px; }
+    .orders-modal-foot { padding: 8px 10px; }
+    .orders-modal-title { font-size: 12px; }
+    .orders-modal-body .input-field { min-height: 32px; font-size: 10px; padding-top: 6px; padding-bottom: 6px; }
+    .orders-modal-body .btn { min-height: 30px; font-size: 10px; padding: 5px 8px; }
+    .orders-modal-grid,
+    .orders-modal-grid-3 { grid-template-columns: 1fr; }
+    .orders-modal-grid,
+    .orders-modal-grid-3 { gap: 6px; }
+    .orders-item-row { padding: 6px; margin-bottom: 6px; }
+    .orders-selection-mode-sticky { top: 56px; }
+  }
+  @media (max-width: 390px) {
+    .orders-compact .orders-title { font-size: 22px !important; }
+    .orders-compact .tab-btn { min-width: 82px !important; font-size: 9px !important; padding: 7px 8px !important; }
+    .orders-compact .compact-action-row { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 4px !important; }
+    .orders-compact .compact-action-row > * { min-height: 28px !important; font-size: 9px !important; padding: 4px 6px !important; }
+    .orders-modal-card { width: min(100%, 300px); max-height: 68vh; }
+    .orders-modal-title { font-size: 11px; }
+  }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="dashboard-main orders-compact">
+  {% if messages %}
+  <div class="messages-list" style="margin-bottom:16px">
+    {% for message in messages %}
+    <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="order-section">
+    <div class="orders-header" style="margin-bottom:12px">
+      <h2 class="orders-title">Orders</h2>
+      <div class="tab-list" role="tablist">
+        <a href="?tab=new{% if search_q %}&q={{ search_q|urlencode }}{% endif %}&per_page={{ per_page }}" class="tab-btn {% if tab == 'new' %}active{% endif %}">New <span class="tab-count" id="tab-count-new">{{ order_counts.new }}</span></a>
+        <a href="?tab=pending{% if search_q %}&q={{ search_q|urlencode }}{% endif %}&per_page={{ per_page }}" class="tab-btn {% if tab == 'pending' %}active{% endif %}">Pending <span class="tab-count" id="tab-count-pending">{{ order_counts.pending }}</span></a>
+        <a href="?tab=completed{% if search_q %}&q={{ search_q|urlencode }}{% endif %}&per_page={{ per_page }}" class="tab-btn {% if tab == 'completed' %}active{% endif %}">Completed <span class="tab-count" id="tab-count-completed">{{ order_counts.completed }}</span></a>
+        <a href="?tab=returns{% if search_q %}&q={{ search_q|urlencode }}{% endif %}&per_page={{ per_page }}" class="tab-btn {% if tab == 'returns' %}active{% endif %}">Returns <span class="tab-count" id="tab-count-returns">{{ order_counts.returns }}</span></a>
+        <a href="?tab=all{% if search_q %}&q={{ search_q|urlencode }}{% endif %}&per_page={{ per_page }}" class="tab-btn {% if tab == 'all' %}active{% endif %}">All <span class="tab-count" id="tab-count-all">{{ order_counts.all }}</span></a>
+      </div>
+    </div>
+
+    <form id="orders-search-form" method="GET" style="margin-bottom: 16px; display: flex; gap: 10px; flex-wrap: wrap; align-items:center;">
+      <input type="hidden" name="tab" value="{{ tab }}">
+      <input type="hidden" name="page" value="1">
+      {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+      <div class="input-prefix-wrap" style="flex:1; min-width:300px; max-width:560px;">
+        <i class="ri-search-line input-prefix"></i>
+        <input type="text" id="orders-search-input" name="q" placeholder="Search by Order ID, Buyer Name, or Product ID..." class="input-field" value="{{ search_q }}" autocomplete="off">
+      </div>
+      <div class="orders-per-page-wrap">
+        <label for="orders-per-page" class="orders-per-page-label">Rows</label>
+        <select id="orders-per-page" name="per_page" class="input-field orders-per-page-input" onchange="this.form.submit()">
+          <option value="5" {% if per_page == 5 %}selected{% endif %}>5 / page</option>
+          <option value="10" {% if per_page == 10 %}selected{% endif %}>10 / page</option>
+          <option value="25" {% if per_page == 25 %}selected{% endif %}>25 / page</option>
+          <option value="50" {% if per_page == 50 %}selected{% endif %}>50 / page</option>
+          <option value="100" {% if per_page == 100 %}selected{% endif %}>100 / page</option>
+        </select>
+      </div>
+      <div class="compact-action-row">
+        <button type="button" class="btn btn-outline-saffron" style="padding:10px 16px;font-weight:700" onclick="openNewOrderFlow()">+ New Order</button>
+        <button type="button" class="btn btn-ghost" style="padding:10px 16px;font-weight:700" onclick="openImportFlow()">Import</button>
+        <button type="button" class="btn btn-ghost" onclick="toggleSelectionMode()" style="padding:10px 16px;font-weight:700;color:var(--kaam-danger)">Bulk Deletion</button>
+      </div>
+    </form>
+
+    {% if tab == 'pending' %}
+    <div class="eyebrow" style="margin-bottom:8px">Track Status</div>
+    <div class="delivery-strip" style="margin-bottom:18px">
+      <a href="?tab=pending&status=confirmed{% if search_q %}&q={{ search_q|urlencode }}{% endif %}&per_page={{ per_page }}" class="dispatch-chip {% if status_filter == 'confirmed' %}selected{% endif %}" style="text-decoration:none">Confirmed <span class="chip-count">{{ stats.confirmed }}</span></a>
+      <a href="?tab=pending&status=packed{% if search_q %}&q={{ search_q|urlencode }}{% endif %}&per_page={{ per_page }}" class="dispatch-chip {% if status_filter == 'packed' %}selected{% endif %}" style="text-decoration:none">Packed <span class="chip-count">{{ stats.packed }}</span></a>
+      <a href="?tab=pending&status=shipped{% if search_q %}&q={{ search_q|urlencode }}{% endif %}&per_page={{ per_page }}" class="dispatch-chip {% if status_filter == 'shipped' %}selected{% endif %}" style="text-decoration:none">Shipped <span class="chip-count">{{ stats.shipped }}</span></a>
+      <a href="?tab=pending&status=out_for_delivery{% if search_q %}&q={{ search_q|urlencode }}{% endif %}&per_page={{ per_page }}" class="dispatch-chip {% if status_filter == 'out_for_delivery' %}selected{% endif %}" style="text-decoration:none">Out for Delivery <span class="chip-count">{{ stats.out_for_delivery }}</span></a>
+    </div>
+    {% endif %}
+
+    <div id="bulk-actions-banner" class="selection-mode-only orders-selection-mode-sticky" style="display:none;align-items:center;gap:10px;margin:-6px 0 14px 0;flex-wrap:wrap;background:var(--kaam-saffron-pale);padding:10px 14px;border-radius:var(--radius-md);border:1px solid var(--kaam-saffron)">
+      <label class="select-all-label" style="margin:0;font-weight:700">
+        <input type="checkbox" id="select-all-orders" onchange="toggleSelectAllOrders(this.checked)">
+        Select all <span style="font-weight:normal;color:var(--kaam-danger);margin-left:8px">(Deletion Mode)</span>
+      </label>
+      <div style="flex:1"></div>
+      <button type="button" class="btn btn-danger btn-sm" style="background:transparent;color:var(--kaam-danger);border-color:var(--kaam-danger)" onclick="deleteSelectedOrders()">Delete Selected</button>
+      <button type="button" class="btn btn-danger btn-sm" onclick="deleteAllOrdersInTab()">Delete All in Tab</button>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="toggleSelectionMode()">Cancel</button>
+    </div>
+
+    {% if not orders %}
+    <div class="orders-table-wrap">
+      <div class="empty-state">
+        <div class="empty-state-icon">📋</div>
+        <div class="empty-state-title">No orders in this tab</div>
+        <div class="empty-state-body">Try another tab or clear your search.</div>
+      </div>
+    </div>
+    {% else %}
+    <div class="orders-table-wrap">
+      <table class="orders-table" role="table">
+        <thead>
+          <tr>
+            <th class="selection-col" style="width:44px">Select</th>
+            <th>Product & ID</th>
+            <th>Buyer</th>
+            <th>Date & Time</th>
+            <th>Products</th>
+            <th>Address</th>
+            <th>Payment</th>
+            {% if tab == 'returns' %}<th>Reason</th>{% endif %}
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in orders %}
+          <tr id="order-row-{{ order.order_id }}" onclick="toggleExpand('{{ order.order_id }}')" {% if tab == 'returns' and order.return_status == 'requested' %}style="background:var(--kaam-saffron-pale)"{% endif %}>
+            <td class="selection-col">
+              <input type="checkbox" class="order-select-checkbox product-checkbox" value="{{ order.order_id }}" onchange="syncSelectAllOrdersState()">
+            </td>
+            <td>
+              {% with first_item=order.items.first %}
+              <div style="display:flex;gap:10px;align-items:center">
+                {% if first_item and first_item.product_image_url %}
+                <img src="{{ first_item.product_image_url }}" alt="{{ order.order_id }}" style="width:44px;height:44px;object-fit:cover;border-radius:8px;border:1px solid var(--kaam-line)">
+                {% else %}
+                <div style="width:44px;height:44px;border-radius:8px;border:1px solid var(--kaam-line);display:flex;align-items:center;justify-content:center;color:var(--kaam-stone)">📷</div>
+                {% endif %}
+                <div>
+                  <div style="font-weight:700;color:var(--kaam-ink)">{{ first_item.product_title|default:"Order" }}</div>
+                  <div style="font-size:11px;color:var(--kaam-stone-dark)">ORD: {{ order.order_id }}</div>
+                  {% if first_item and first_item.product %}
+                  <div style="font-size:11px;color:var(--kaam-stone-dark)">PID: {{ first_item.product.product_id }}</div>
+                  {% endif %}
+                  {% if order.return_status == 'exchanged' %}
+                  <div class="badge badge-info" style="font-size:10px;margin-top:4px;display:inline-block">Exchanged</div>
+                  {% elif order.return_status == 'refunded' %}
+                  <div class="badge badge-warning" style="font-size:10px;margin-top:4px;display:inline-block">Refunded</div>
+                  {% endif %}
+                </div>
+              </div>
+              {% endwith %}
+            </td>
+            <td>
+              <div class="order-buyer">{{ order.buyer_name }}</div>
+              <div class="order-address"><i class="ri-smartphone-line"></i> {{ order.buyer_whatsapp }}</div>
+              <div class="order-address"><i class="ri-mail-line"></i> {{ order.buyer_email }}</div>
+            </td>
+            <td>
+              <div style="font-weight:700">{{ order.created_at|date:"d M, Y" }}</div>
+              <div class="order-address">{{ order.created_at|date:"h:i A" }}</div>
+            </td>
+            <td>
+              <div class="order-products">{{ order.items.count }} item{{ order.items.count|pluralize }}</div>
+              {% for item in order.items.all|slice:":1" %}
+              {% if item.product %}<div class="order-address">PID: {{ item.product.product_id }}</div>{% endif %}
+              {% endfor %}
+            </td>
+            <td><div class="order-address">{{ order.city }}, {{ order.state }}</div></td>
+            <td>
+              <span class="badge {{ order.payment_method|payment_badge_class }}">{{ order.get_payment_method_display }}</span>
+              <div class="mono" style="font-size:13px;font-weight:700;margin-top:6px;color:var(--kaam-ink)">₹{{ order.total_amount }}</div>
+              {% if order.return_status == 'refunded' %}
+              <div class="mono" style="font-size:11px;font-weight:700;color:var(--kaam-danger);margin-top:2px">-₹{{ order.return_refund_amount|default:order.total_amount }} refunded</div>
+              {% endif %}
+            </td>
+            {% if tab == 'returns' %}
+            <td>
+              <div style="font-size:12px;color:var(--kaam-soot);line-height:1.5">
+                <span class="badge {% if order.return_type == 'exchange' %}badge-info{% else %}badge-warning{% endif %}" style="font-size:10px">{{ order.get_return_type_display|default:order.return_type|title }}</span>
+                {% if order.return_reason %}
+                <div style="margin-top:6px">{{ order.return_reason|truncatechars:60 }}</div>
+                {% endif %}
+              </div>
+            </td>
+            {% endif %}
+            <td onclick="event.stopPropagation()">
+              {% if tab == 'pending' %}
+              <select class="input-field" id="status-sel-{{ order.order_id }}" style="min-width:130px;padding:7px 26px 7px 10px;font-size:12px" onchange="updateOrderStatus('{{ order.order_id }}', this, this)">
+                <option value="confirmed" {% if order.status == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                <option value="packed" {% if order.status == 'packed' %}selected{% endif %}>Packed</option>
+                <option value="shipped" {% if order.status == 'shipped' %}selected{% endif %}>Shipped</option>
+                <option value="out_for_delivery" {% if order.status == 'out_for_delivery' %}selected{% endif %}>Out for Delivery</option>
+                <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>Delivered</option>
+              </select>
+              {% else %}
+              {% if tab == 'returns' %}
+              <span class="badge {% if order.return_status == 'requested' %}badge-warning{% elif order.return_status == 'approved' %}badge-success{% else %}badge-info{% endif %}" id="status-badge-{{ order.order_id }}">
+                {{ order.get_return_status_display }}
+              </span>
+              {% else %}
+              <span class="badge {{ order.status|status_badge_class }}" id="status-badge-{{ order.order_id }}">{{ order.get_status_display }}</span>
+              {% endif %}
+              {% endif %}
+            </td>
+            <td onclick="event.stopPropagation()">
+              {% if tab == 'new' %}
+              <button class="btn btn-primary btn-sm" style="width:100%;margin-bottom:6px" onclick="confirmOrder('{{ order.order_id }}', this)">Confirm Order</button>
+              {% elif tab == 'returns' %}
+                {% if order.return_status == 'requested' %}
+                <button class="btn btn-primary btn-sm" style="width:100%;margin-bottom:6px" onclick="processReturn('{{ order.order_id }}', 'approve')">Approve</button>
+                <button class="btn btn-danger btn-sm" style="width:100%;margin-bottom:6px;background:transparent;color:var(--kaam-danger);border-color:var(--kaam-danger)" onclick="processReturn('{{ order.order_id }}', 'decline')">Decline</button>
+                {% elif order.return_status == 'approved' %}
+                  {% if order.return_type == 'exchange' %}
+                  <button class="btn btn-primary btn-sm" style="width:100%;margin-bottom:6px" onclick="processReturn('{{ order.order_id }}', 'exchanged')">Mark Exchanged</button>
+                  {% else %}
+                  <button class="btn btn-primary btn-sm" style="width:100%;margin-bottom:6px" onclick="processReturn('{{ order.order_id }}', 'refunded')">Mark Refunded</button>
+                  {% endif %}
+                {% endif %}
+              {% endif %}
+              <a class="btn btn-ghost btn-sm" style="width:100%;margin-bottom:6px" href="{% url 'order_detail' order.order_id %}?tab={{ tab }}{% if status_filter %}&status={{ status_filter|urlencode }}{% endif %}{% if search_q %}&q={{ search_q|urlencode }}{% endif %}&page={{ page_obj.number }}&per_page={{ per_page }}">View Details</a>
+              <button class="btn btn-danger btn-sm" style="width:100%;background:transparent;color:var(--kaam-danger);border-color:var(--kaam-danger)" onclick="deleteOrder('{{ order.order_id }}')">Delete</button>
+            </td>
+          </tr>
+          <tr id="expand-{{ order.order_id }}" class="order-expand-row" style="display:none">
+            <td colspan="{% if tab == 'returns' %}10{% else %}9{% endif %}">
+              <div class="order-expand-content">
+                <div>
+                  <div class="expand-section-title">Order Items</div>
+                  {% for item in order.items.all %}
+                  <div class="expand-item">
+                    {% if item.product_image_url %}
+                    <img src="{{ item.product_image_url }}" alt="{{ item.product_title }}" class="expand-item-img">
+                    {% endif %}
+                    <div class="expand-item-info">
+                      <div class="expand-item-title">{{ item.product_title }}</div>
+                      <div style="font-size:11px;color:var(--kaam-stone-dark)">
+                        {% if item.product %}PID: {{ item.product.product_id }} | {% endif %}ORD: {{ order.order_id }}
+                      </div>
+                      <div>{{ item.selected_size_color }} · Qty {{ item.quantity }}</div>
+                      <div class="mono" style="font-size:12px">₹{{ item.subtotal }}</div>
+                    </div>
+                  </div>
+                  {% endfor %}
+                  <div style="font-weight:700;font-size:14px;margin-top:10px;border-top:1px solid var(--kaam-line);padding-top:10px">
+                    Total: <span class="mono">₹{{ order.total_amount }}</span>
+                    {% if order.return_status == 'refunded' %}
+                    <div style="font-size:12px;color:var(--kaam-danger);margin-top:6px">Refunded: -₹{{ order.return_refund_amount|default:order.total_amount }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <div>
+                  <div class="expand-section-title">Delivery Address</div>
+                  <div style="font-size:13px;line-height:1.7;color:var(--kaam-soot)">
+                    {{ order.address_line1 }}<br>
+                    {% if order.address_line2 %}{{ order.address_line2 }}<br>{% endif %}
+                    {{ order.city }}, {{ order.state }} – {{ order.pincode }}<br>
+                    {{ order.country }}
+                  </div>
+                  <div style="margin-top:16px">
+                    <div class="expand-section-title">Contact</div>
+                    <a href="https://wa.me/{{ order.buyer_whatsapp|cut:' ' }}" target="_blank" class="expand-contact-link">
+                      <i class="ri-whatsapp-line"></i> WhatsApp {{ order.buyer_whatsapp }}
+                    </a>
+                    {% if order.buyer_email %}
+                    <br><a href="https://mail.google.com/mail/?view=cm&fs=1&to={{ order.buyer_email }}" target="_blank" rel="noopener noreferrer" class="expand-contact-link" style="margin-top:6px">
+                      <i class="ri-mail-line"></i> {{ order.buyer_email }}
+                    </a>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <div>
+                  <div class="expand-section-title">Payment</div>
+                  <div style="font-size:13px;line-height:2">
+                    Method: <span class="badge {{ order.payment_method|payment_badge_class }}">{{ order.get_payment_method_display }}</span><br>
+                    Status: <strong>{{ order.payment_status|title }}</strong><br>
+                    {% if order.utr_number %}
+                    UTR: <span class="mono" style="font-size:12px">{{ order.utr_number }}</span>
+                    {% endif %}
+                  </div>
+                  {% if order.payment_screenshot %}
+                  <div style="margin-top:12px">
+                    <a href="{{ order.payment_screenshot.url }}" target="_blank">
+                      <img src="{{ order.payment_screenshot.url }}" alt="Payment screenshot" style="width:120px;border-radius:8px;border:1px solid var(--kaam-line)">
+                    </a>
+                  </div>
+                  {% endif %}
+                  {% if tab == 'returns' %}
+                  <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--kaam-line)">
+                    <div class="expand-section-title">Return Details</div>
+                    <div style="font-size:12px;line-height:1.8;color:var(--kaam-soot)">
+                      Type: <strong>{{ order.get_return_type_display|default:order.return_type|title }}</strong><br>
+                      Status: <strong>{{ order.get_return_status_display }}</strong><br>
+                      {% if order.return_reason %}Reason: {{ order.return_reason }}<br>{% endif %}
+                      {% if order.return_declined_reason %}Decline Note: {{ order.return_declined_reason }}<br>{% endif %}
+                      {% if order.return_exchange_variant %}Exchange Variant: {{ order.return_exchange_variant }}{% endif %}
+                    </div>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="order-cards">
+      {% for order in orders %}
+      <div class="order-card" id="mob-card-{{ order.order_id }}">
+        <div onclick="toggleMobCard('{{ order.order_id }}')" style="cursor:pointer;display:flex;align-items:center;gap:6px">
+          <div class="selection-check-wrap" onclick="event.stopPropagation()">
+            <input type="checkbox" class="order-select-checkbox product-checkbox" value="{{ order.order_id }}" style="width:14px;height:14px;flex-shrink:0" onchange="syncSelectAllOrdersState()">
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:13px;font-weight:700;color:var(--kaam-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px">{{ order.buyer_name }}</span>
+              <span style="font-family:var(--font-mono);font-size:9px;color:var(--kaam-stone-dark);white-space:nowrap">{{ order.created_at|timesince_short }}</span>
+            </div>
+            <div style="font-size:10px;color:var(--kaam-stone-dark);margin-top:1px">
+              <span style="font-family:var(--font-mono)">{{ order.order_id }}</span><br>
+              {{ order.items.count }}× · {{ order.city }} · <span style="font-family:var(--font-mono)">₹{{ order.total_amount }}</span>
+            </div>
+          </div>
+          <span class="badge {% if tab == 'returns' %}{% if order.return_status == 'requested' %}badge-warning{% elif order.return_status == 'approved' %}badge-success{% else %}badge-info{% endif %}{% else %}{{ order.status|status_badge_class }}{% endif %}" style="font-size:9px;padding:2px 7px;flex-shrink:0">
+            {% if tab == 'returns' %}{{ order.get_return_status_display }}{% else %}{{ order.get_status_display }}{% endif %}
+          </span>
+          <svg id="chev-{{ order.order_id }}" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="color:var(--kaam-stone-dark);transition:transform 0.2s;flex-shrink:0"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+
+        <div style="margin-top:7px">
+          {% if tab == 'new' %}
+          <button class="btn btn-primary" style="font-size:11px;padding:5px 14px;width:100%" onclick="confirmOrder('{{ order.order_id }}', this)">Confirm Order</button>
+          {% elif tab == 'pending' %}
+          <select class="input-field" style="font-size:11px;padding:5px 10px;width:100%" onchange="updateOrderStatus('{{ order.order_id }}', this, this)">
+            <option value="confirmed" {% if order.status == 'confirmed' %}selected{% endif %}>Confirmed</option>
+            <option value="packed" {% if order.status == 'packed' %}selected{% endif %}>Packed</option>
+            <option value="shipped" {% if order.status == 'shipped' %}selected{% endif %}>Shipped</option>
+            <option value="out_for_delivery" {% if order.status == 'out_for_delivery' %}selected{% endif %}>Out for Delivery</option>
+            <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>Delivered</option>
+          </select>
+          {% elif tab == 'returns' %}
+            {% if order.return_status == 'requested' %}
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-primary" style="font-size:11px;padding:5px 10px;flex:1" onclick="processReturn('{{ order.order_id }}', 'approve')"><i class="ri-check-line"></i> Approve</button>
+              <button style="font-size:11px;padding:5px 10px;flex:1;border:1px solid var(--kaam-danger);border-radius:6px;background:transparent;color:var(--kaam-danger);font-weight:600;cursor:pointer" onclick="processReturn('{{ order.order_id }}', 'decline')"><i class="ri-close-line"></i> Decline</button>
+            </div>
+            {% elif order.return_status == 'approved' %}
+            <button class="btn btn-primary" style="font-size:11px;padding:5px 14px;width:100%" onclick="processReturn('{{ order.order_id }}', '{{ order.return_type }}' === 'exchange' ? 'exchanged' : 'refunded')">Mark {% if order.return_type == 'exchange' %}Exchanged{% else %}Refunded{% endif %}</button>
+            {% endif %}
+          {% endif %}
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <a class="btn btn-ghost" style="font-size:11px;padding:5px 10px;flex:1" href="{% url 'order_detail' order.order_id %}?tab={{ tab }}{% if status_filter %}&status={{ status_filter|urlencode }}{% endif %}{% if search_q %}&q={{ search_q|urlencode }}{% endif %}&page={{ page_obj.number }}&per_page={{ per_page }}" onclick="event.stopPropagation()">View Details</a>
+            <button style="font-size:11px;padding:5px 10px;flex:1;border:1px solid var(--kaam-danger);border-radius:6px;background:transparent;color:var(--kaam-danger);font-weight:600;cursor:pointer" onclick="event.stopPropagation(); deleteOrder('{{ order.order_id }}')">Delete</button>
+          </div>
+        </div>
+
+        <div id="mob-detail-{{ order.order_id }}" style="display:none;border-top:1px solid var(--kaam-line);margin-top:8px;padding-top:8px;font-size:11px;color:var(--kaam-soot)">
+          {% for item in order.items.all %}
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+            {% if item.product_image_url %}<img src="{{ item.product_image_url }}" style="width:32px;height:32px;object-fit:cover;border-radius:4px;flex-shrink:0">{% endif %}
+            <div style="flex:1;min-width:0">
+              <div style="font-size:11px;font-weight:600;color:var(--kaam-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ item.product_title }}</div>
+              <div style="font-size:11px;color:var(--kaam-stone-dark);margin-bottom:2px">{% if item.product %}PID: {{ item.product.product_id }} | {% endif %}ORD: {{ order.order_id }}</div>
+              <div style="color:var(--kaam-stone-dark)">{{ item.selected_size_color }} · ×{{ item.quantity }} · <span style="font-family:var(--font-mono)">₹{{ item.subtotal }}</span></div>
+            </div>
+          </div>
+          {% endfor %}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;padding-top:6px;border-top:1px solid var(--kaam-line)">
+            <div>
+              <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--kaam-stone-dark);margin-bottom:3px">Address</div>
+              <div style="line-height:1.5">{{ order.city }}, {{ order.state }}<br>{{ order.pincode }}</div>
+            </div>
+            <div>
+              <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--kaam-stone-dark);margin-bottom:3px">Contact</div>
+              <a href="https://wa.me/{{ order.buyer_whatsapp|cut:' ' }}" target="_blank" style="font-size:11px;font-weight:600;color:var(--kaam-success)"><i class="ri-whatsapp-line"></i> {{ order.buyer_whatsapp }}</a>
+              <div><a href="https://mail.google.com/mail/?view=cm&fs=1&to={{ order.buyer_email }}" target="_blank" rel="noopener noreferrer" style="font-size:11px;font-weight:600;color:var(--kaam-info)"><i class="ri-mail-line"></i> {{ order.buyer_email }}</a></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div id="orders-manual-modal" class="orders-modal-overlay" onclick="if(event.target===this) closeModal('orders-manual-modal')">
+  <div class="orders-modal-card">
+    <div class="orders-modal-head">
+      <div class="orders-modal-title">New Offline Order</div>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="closeModal('orders-manual-modal')">Close</button>
+    </div>
+    <form id="orders-manual-form" method="POST" action="{% url 'manual_order_create' %}">
+      {% csrf_token %}
+      <div class="orders-modal-body">
+        <div class="orders-modal-grid">
+          <input class="input-field" name="buyer_name" placeholder="Customer name*" required>
+          <input class="input-field" name="buyer_whatsapp" placeholder="WhatsApp*" required>
+          <input class="input-field" name="buyer_email" placeholder="Email">
+          <input class="input-field" name="address_line1" placeholder="Address*" required>
+          <input class="input-field" name="city" placeholder="City*" required>
+          <input class="input-field" name="state" placeholder="State*" required>
+          <input class="input-field" name="pincode" placeholder="Pincode*" required>
+          <select class="input-field" name="payment_method">
+            <option value="cod">Cash on Delivery</option>
+            <option value="online">Online</option>
+          </select>
+          <select class="input-field" name="status">
+            <option value="confirmed">Confirmed</option>
+            <option value="packed">Packed</option>
+            <option value="shipped">Shipped</option>
+            <option value="out_for_delivery">Out for Delivery</option>
+            <option value="delivered">Delivered</option>
+          </select>
+          <input class="input-field" name="utr_number" placeholder="UTR (optional)">
+        </div>
+        <div style="font-size:11px;font-weight:700;color:var(--kaam-stone-dark);text-transform:uppercase;letter-spacing:0.08em;margin:12px 0 8px">Order Items</div>
+        <div id="orders-manual-items"></div>
+        <button type="button" class="btn btn-ghost btn-sm" style="width:100%" onclick="addManualOrderItemRow()">+ Add Another Item</button>
+      </div>
+      <div class="orders-modal-foot">
+        <div style="font-size:12px;font-weight:700;color:var(--kaam-soot)">Total: ₹<span id="orders-manual-total">0</span></div>
+        <button type="submit" class="btn btn-primary">Save Order</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="orders-import-modal" class="orders-modal-overlay" onclick="if(event.target===this) closeModal('orders-import-modal')">
+  <div class="orders-modal-card">
+    <div class="orders-modal-head">
+      <div class="orders-modal-title">Import Orders</div>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="closeModal('orders-import-modal')">Close</button>
+    </div>
+    <form method="POST" action="{% url 'import_orders_csv' %}" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="orders-modal-body">
+        <div class="orders-modal-grid">
+          <select class="input-field" name="target_status">
+            <option value="new" {% if tab == 'new' %}selected{% endif %}>Import into New</option>
+            <option value="pending" {% if tab == 'pending' %}selected{% endif %}>Import into Pending</option>
+            <option value="completed" {% if tab == 'completed' %}selected{% endif %}>Import into Completed</option>
+          </select>
+          <input type="file" class="input-field" name="csv_file" accept=".csv,.json" required>
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:var(--kaam-stone-dark)">Use CSV/JSON. Format should match your sample template.</div>
+      </div>
+      <div class="orders-modal-foot">
+        <span style="font-size:12px;color:var(--kaam-stone-dark)">Bulk import to this tab</span>
+        <button type="submit" class="btn btn-primary">Import Now</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block seller_js %}
+<script>
+  let selectionMode = false;
+  function openNewOrderFlow() {
+    ensureManualRows();
+    openModal('orders-manual-modal');
+  }
+  function openImportFlow() {
+    openModal('orders-import-modal');
+  }
+  function toggleSelectionMode() {
+    selectionMode = !selectionMode;
+    const wrapper = document.querySelector('.orders-compact');
+    if (wrapper) wrapper.classList.toggle('selection-mode', selectionMode);
+    document.querySelectorAll('.selection-col').forEach(el => {
+      el.style.display = selectionMode ? '' : 'none';
+    });
+    const banner = document.getElementById('bulk-actions-banner');
+    if (banner) banner.style.display = selectionMode ? 'flex' : 'none';
+    if (!selectionMode) {
+      const all = document.getElementById('select-all-orders');
+      if (all) all.checked = false;
+      document.querySelectorAll('.order-select-checkbox').forEach(cb => cb.checked = false);
+    }
+    syncSelectAllOrdersState();
+  }
+
+  function manualProductOptionsHtml() {
+    return `{% for p in manual_products %}<option value="{{ p.id }}" data-price="{{ p.price }}">{{ p.product_id }} — {{ p.title|escapejs }} (₹{{ p.price }})</option>{% endfor %}`;
+  }
+
+  function addManualOrderItemRow() {
+    const container = document.getElementById('orders-manual-items');
+    if (!container) return;
+    const row = document.createElement('div');
+    row.className = 'orders-item-row';
+    row.innerHTML = `
+      <div class="orders-modal-grid-3">
+        <select class="input-field" name="product_ids[]" onchange="syncManualPriceFromProduct(this); recalcManualTotal()">
+          ${manualProductOptionsHtml()}
+        </select>
+        <input class="input-field" name="variant_names[]" placeholder="Variant (optional)" value="Standard">
+        <input class="input-field" name="variant_prices[]" placeholder="Unit price override">
+        <input type="number" class="input-field" name="quantities[]" min="1" value="1" onchange="recalcManualTotal()" oninput="recalcManualTotal()">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="this.closest('.orders-item-row').remove(); recalcManualTotal();">Remove</button>
+      </div>
+    `;
+    container.appendChild(row);
+    const firstSelect = row.querySelector('select[name="product_ids[]"]');
+    if (firstSelect) syncManualPriceFromProduct(firstSelect);
+    recalcManualTotal();
+  }
+
+  function ensureManualRows() {
+    const container = document.getElementById('orders-manual-items');
+    if (!container) return;
+    if (!container.children.length) addManualOrderItemRow();
+  }
+
+  function syncManualPriceFromProduct(selectEl) {
+    const row = selectEl.closest('.orders-item-row');
+    if (!row) return;
+    const priceInput = row.querySelector('input[name="variant_prices[]"]');
+    const selectedOpt = selectEl.options[selectEl.selectedIndex];
+    const basePrice = selectedOpt ? selectedOpt.getAttribute('data-price') : '';
+    if (priceInput && (!priceInput.value || priceInput.value === '0')) {
+      priceInput.value = basePrice || '';
+    }
+  }
+
+  function recalcManualTotal() {
+    const rows = document.querySelectorAll('#orders-manual-items .orders-item-row');
+    let total = 0;
+    rows.forEach((row) => {
+      const qty = parseInt(row.querySelector('input[name="quantities[]"]')?.value || '1', 10);
+      const priceInput = row.querySelector('input[name="variant_prices[]"]');
+      const selectEl = row.querySelector('select[name="product_ids[]"]');
+      const selectedOpt = selectEl ? selectEl.options[selectEl.selectedIndex] : null;
+      const basePrice = parseFloat(selectedOpt?.getAttribute('data-price') || '0');
+      const unitPrice = parseFloat(priceInput?.value || basePrice || '0');
+      total += (isNaN(unitPrice) ? 0 : unitPrice) * (isNaN(qty) ? 1 : Math.max(qty, 1));
+    });
+    const totalEl = document.getElementById('orders-manual-total');
+    if (totalEl) totalEl.textContent = Math.round(total * 100) / 100;
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    ensureManualRows();
+    const manualForm = document.getElementById('orders-manual-form');
+    if (manualForm) {
+      manualForm.addEventListener('input', recalcManualTotal);
+      manualForm.addEventListener('change', recalcManualTotal);
+    }
+    document.querySelectorAll('.selection-col').forEach(el => el.style.display = 'none');
+    var input = document.getElementById('orders-search-input');
+    if (!input) return;
+    function normalize(value) {
+      return (value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    }
+    var desktopRows = Array.prototype.slice.call(document.querySelectorAll('tr[id^="order-row-"]')).map(function (row) {
+      return { el: row, text: normalize(row.textContent) };
+    });
+    var mobileCards = Array.prototype.slice.call(document.querySelectorAll('.order-card[id^="mob-card-"]')).map(function (card) {
+      return { el: card, text: normalize(card.textContent) };
+    });
+    function applyFilter() {
+      var query = normalize(input.value);
+      desktopRows.forEach(function (entry) {
+        var isMatch = !query || entry.text.indexOf(query) !== -1;
+        entry.el.style.display = isMatch ? '' : 'none';
+      });
+      mobileCards.forEach(function (entry) {
+        var isMatch = !query || entry.text.indexOf(query) !== -1;
+        entry.el.style.display = isMatch ? '' : 'none';
+      });
+      syncSelectAllOrdersState();
+    }
+    input.addEventListener('input', applyFilter);
+    applyFilter();
+  });
+</script>
+{% endblock %}

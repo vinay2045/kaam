@@ -1,15 +1,22 @@
 {% extends "base/base_seller.html" %}
 {% load static %}
 
-{% block meta %}<title>Settings — Kaam</title>{% endblock %}
+{% block meta %}<title>Settings — Order Karle</title>{% endblock %}
 {% block mob_set_active %}active{% endblock %}
 
 {% block dashboard_content %}
 <div class="settings-page">
 
-  <div style="margin-bottom:24px">
-    <div class="eyebrow">Account</div>
-    <h1 style="font-size:26px">Settings</h1>
+  <div style="margin-bottom:24px; display: flex; justify-content: space-between; align-items: flex-end;">
+    <div>
+      <div class="eyebrow">Account Settings for <span style="color: var(--kaam-saffron)">admin/{{ seller.username }}</span></div>
+      <h1 style="font-size:26px">Settings</h1>
+    </div>
+    {% if seller.email %}
+    <a href="https://mail.google.com/mail/?view=cm&fs=1&to={{ seller.email }}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm" style="margin-bottom: 4px;">
+      <i class="ri-mail-line"></i> Contact Support
+    </a>
+    {% endif %}
   </div>
 
   {% if messages %}
@@ -64,6 +71,13 @@
           </div>
         </div>
 
+        <div class="input-group">
+          <label class="input-label">Support Email</label>
+          <input type="email" name="email" class="input-field"
+                 value="{{ seller.email }}" placeholder="support@yourstore.com">
+          <span class="input-hint">Used for buyer contact and order notifications.</span>
+        </div>
+
         <div class="grid-2">
           <div class="input-group">
             <label class="input-label">WhatsApp Number *</label>
@@ -74,6 +88,14 @@
             <label class="input-label">UPI ID / VPA</label>
             <input type="text" name="upi_id" class="input-field"
                    value="{{ seller.upi_id|default_if_none:'' }}" placeholder="{{ seller.whatsapp_number }}@upi (default)">
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="input-group">
+            <label class="input-label">Order Delivery Days *</label>
+            <input type="number" name="order_delivery_days" class="input-field"
+                   value="{{ seller.order_delivery_days|default:3 }}" min="1" max="30" required>
+            <span class="input-hint">Shown on your storefront as expected delivery time.</span>
           </div>
         </div>
 
@@ -181,7 +203,7 @@
           {% endif %}
         </div>
         <div style="margin-top:14px;font-size:12px;color:var(--kaam-stone-dark)">
-          To modify your subscription, contact Kaam support.
+          To modify your subscription, contact Order Karle support.
         </div>
       </div>
     </div>

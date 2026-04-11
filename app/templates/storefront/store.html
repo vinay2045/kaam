@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ seller.business_name }} — Order on Kaam</title>
+  <title>{{ seller.business_name }} — Order on Order Karle</title>
   <meta name="description" content="Browse and order from {{ seller.business_name }}. Fast, simple, no signup needed.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -58,6 +58,29 @@
             <span class="sf-welcome-feature"><i class="ri-box-3-line"></i> Track your order</span>
             <span class="sf-welcome-feature"><i class="ri-bank-card-line"></i> COD or Online</span>
           </div>
+          <div class="sf-delivery-status">
+            <span class="sf-delivery-status-dot"></span>
+            Order Shipped — Expected in {{ seller.order_delivery_days }} day{{ seller.order_delivery_days|pluralize }}
+          </div>
+          {% if seller.instagram_link or seller.facebook_link %}
+          <div class="sf-social-links">
+            {% if seller.instagram_link %}
+            <a href="{{ seller.instagram_link }}" target="_blank" rel="noopener noreferrer" class="sf-social-link">
+              <i class="ri-instagram-line"></i> Instagram
+            </a>
+            {% endif %}
+            {% if seller.facebook_link %}
+            <a href="{{ seller.facebook_link }}" target="_blank" rel="noopener noreferrer" class="sf-social-link">
+              <i class="ri-facebook-circle-line"></i> Facebook
+            </a>
+            {% endif %}
+            {% if seller.email %}
+            <a href="https://mail.google.com/mail/?view=cm&fs=1&to={{ seller.email }}" target="_blank" rel="noopener noreferrer" class="sf-social-link">
+              <i class="ri-mail-line"></i> Email
+            </a>
+            {% endif %}
+          </div>
+          {% endif %}
           <button class="btn btn-primary btn-lg" onclick="nextStep()" id="welcome-start-btn">
             Start Ordering →
           </button>
