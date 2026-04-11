@@ -17,6 +17,7 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 
 from .models import Seller, Product, Order, OrderItem, Notification, ContactMessage
+from .utils import SpamGuard, RateLimiter
 
 
 # ─────────────────────────────────────────────
@@ -1103,12 +1104,46 @@ def storefront(request, username):
         if not seller.is_active or not seller.subscription_active:
             return JsonResponse({'success': False, 'error': 'This store is currently unavailable.'})
 
+        # 1. Rate Limit Check (1 order every 3 minutes per IP)
+        if RateLimiter.is_rate_limited(request, f"order_{seller.id}", limit=1, period_seconds=180):
+            return JsonResponse({
+                'success': False, 
+                'error': 'Too many order attempts. Please wait 3 minutes before placing another order.'
+            }, status=429)
+
         buyer = data.get('buyer', {})
         address = data.get('address', {})
         items_data = data.get('items', [])
         payment_method = data.get('payment_method', '')
         utr_number = data.get('utr_number', '')
         screenshot_file = request.FILES.get('payment_screenshot')
+
+        # --- SMART BUYER VALIDATIONS ---
+        # 1. Name check
+        is_ok, err = SpamGuard.is_valid_name(buyer.get('name', ''))
+        if not is_ok: return JsonResponse({'success': False, 'error': err})
+
+        # 2. Email check (Strict Whitelist: Gmail, Hotmail, Yahoo, Outlook, iCloud)
+        is_ok, err = SpamGuard.is_valid_email(buyer.get('email', ''))
+        if not is_ok: return JsonResponse({'success': False, 'error': err})
+
+        # 3. Phone check (No sequences, no repeating digits)
+        is_ok, err = SpamGuard.is_valid_phone(buyer.get('whatsapp', ''))
+        if not is_ok: return JsonResponse({'success': False, 'error': err})
+
+        # 4. Address quality check (Min length, keywords, repetitive chars)
+        is_ok, err = SpamGuard.is_quality_address(
+            address.get('line1', ''), 
+            address.get('city', ''), 
+            address.get('state', ''), 
+            address.get('pincode', '')
+        )
+        if not is_ok: return JsonResponse({'success': False, 'error': err})
+
+        # 5. UTR check (if online)
+        is_ok, err = SpamGuard.is_valid_utr(utr_number, payment_method)
+        if not is_ok: return JsonResponse({'success': False, 'error': err})
+        # -------------------------------
 
         if not items_data:
             return JsonResponse({'success': False, 'error': 'No products selected.'})

@@ -44,25 +44,74 @@ function prevStep() {
 function validateStep(step) {
   clearErrors();
   const errors = [];
+
+  const ALLOWED_EMAIL_DOMAINS = ['gmail.com', 'hotmail.com', 'yahoo.com', 'outlook.com', 'icloud.com'];
+  const BLOCKED_KEYWORDS = ['dummy', 'test', 'fake', 'spam', 'none', 'nothing', 'demo', 'null', 'abcd', 'asdf', 'qwerty', '1234'];
+
+  const containsSpam = (str) => {
+    if (!str) return false;
+    const cleaned = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return BLOCKED_KEYWORDS.some(k => cleaned.includes(k));
+  };
+
+  const isRepetitive = (str) => {
+    return /(.)\1{4,}/.test(str); // 5+ repeating characters
+  };
+
   if (step === 1) {
     const name  = document.getElementById('buyer-name')?.value.trim() || '';
     const email = document.getElementById('buyer-email')?.value.trim() || '';
     const wa    = document.getElementById('buyer-wa')?.value.trim() || '';
+    
+    // Name checks
     if (!name || name.length < 2) errors.push('Please enter your full name (at least 2 characters).');
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push('Please enter a valid email address.');
-    if (!wa || wa.replace(/\D/g,'').length < 10) errors.push('Please enter a valid WhatsApp number (10+ digits).');
+    if (containsSpam(name)) errors.push('Please enter a real name, placeholder names are not allowed.');
+    if (/^\d+$/.test(name.replace(/\s/g, ''))) errors.push('Name cannot be entirely numeric.');
+
+    // Email checks
+    const emailParts = email.toLowerCase().split('@');
+    if (!email || emailParts.length !== 2) {
+      errors.push('Please enter a valid email address.');
+    } else {
+      const domain = emailParts[1];
+      if (!ALLOWED_EMAIL_DOMAINS.includes(domain)) {
+        errors.push(`Please use a standard email: ${ALLOWED_EMAIL_DOMAINS.join(', ')}`);
+      }
+      if (containsSpam(emailParts[0])) {
+        errors.push('This email looks like dummy data.');
+      }
+    }
+
+    // Phone checks
+    const digits = wa.replace(/\D/g,'');
+    if (!wa || digits.length < 10) {
+      errors.push('Please enter a valid WhatsApp number (at least 10 digits).');
+    } else {
+      if (new Set(digits).size === 1) errors.push('Invalid phone number (all digits are the same).');
+      if (["12345678", "01234567", "87654321", "98765432"].some(seq => digits.includes(seq))) {
+        errors.push('Invalid phone number (long sequential digits).');
+      }
+    }
   }
+
   if (step === 2) {
-    const required = [
-      ['addr1', 'Address Line 1'],
-      ['city', 'City'],
-      ['state', 'State'],
-      ['pincode', 'Pincode'],
-    ];
-    required.forEach(([id, label]) => {
-      if (!document.getElementById(id)?.value.trim()) errors.push(`${label} is required.`);
-    });
+    const addr1 = document.getElementById('addr1')?.value.trim() || '';
+    const city = document.getElementById('city')?.value.trim() || '';
+    const state = document.getElementById('state')?.value.trim() || '';
+    const pincode = document.getElementById('pincode')?.value.trim() || '';
+
+    if (!addr1 || addr1.length < 5) errors.push('Address Line 1 is too short.');
+    if (containsSpam(addr1 + city + state)) errors.push('Address contains placeholder/dummy keywords.');
+    if (isRepetitive(addr1)) errors.push('Address contains repetitive characters (not allowed).');
+    
+    if (!city) errors.push('City is required.');
+    if (!state) errors.push('State is required.');
+    
+    const cleanPin = pincode.replace(/[^a-z0-9]/gi, '');
+    if (!cleanPin || cleanPin.length < 3) errors.push('Pincode/ZIP is too short.');
+    if (new Set(cleanPin).size === 1 && cleanPin.length > 3) errors.push('Invalid Pincode/ZIP format.');
   }
+
   if (step === 3) {
     if (orderData.items.length === 0) errors.push('Please select at least one product.');
     orderData.items.forEach((item, i) => {
@@ -75,14 +124,22 @@ function validateStep(step) {
       if (!item.qty || item.qty < 1) errors.push(`Quantity must be at least 1 for item ${i + 1}.`);
     });
   }
+
   if (step === 4) {
     if (!orderData.payment_method) errors.push('Please select a payment method.');
   }
+
   if (step === 5) {
     const utr = document.getElementById('utr-input')?.value.trim() || '';
     const hasScreenshot = document.getElementById('payment-screenshot-input')?.files?.[0];
-    if (!utr && !hasScreenshot) errors.push('Please enter a UTR number OR upload a payment screenshot.');
+    if (!utr && !hasScreenshot) {
+      errors.push('Please enter a UTR number OR upload a payment screenshot.');
+    } else if (utr) {
+      if (utr.length < 8) errors.push('UTR/Transaction ID must be at least 8 characters.');
+      if (containsSpam(utr)) errors.push('Transaction ID contains invalid keywords.');
+    }
   }
+
   if (errors.length) showValidationErrors(errors);
   return errors.length === 0;
 }
